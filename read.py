@@ -1,88 +1,96 @@
 import streamlit as st
-import random
+import re
 
-# 1. 數據解構：將詞彙定義為不可分割的字典單元
-WORDS_DATA = [
-    {"amis": "Mahakakerem", "zh": "黎明 / 清晨"}, {"amis": "Tanikay", "zh": "蟬 / 鳴叫聲"},
-    {"amis": "Afesa’", "zh": "嘶嘶聲"}, {"amis": "Kakarayan", "zh": "天空"},
-    {"amis": "Fo’is", "zh": "星星"}, {"amis": "Cidal", "zh": "太陽"},
-    {"amis": "Micelem", "zh": "沉沒 / 落山"}, {"amis": "Pahanhan", "zh": "休息"},
-    {"amis": "Mi’orong", "zh": "肩扛"}, {"amis": "Kinaira", "zh": "收穫"},
-    {"amis": "Niyaro’", "zh": "部落"}, {"amis": "Folad", "zh": "月亮"},
-    {"amis": "Fali", "zh": "風"}, {"amis": "Rengorengosan", "zh": "草叢"},
-    {"amis": "Pahinoker", "zh": "靜謐"}, {"amis": "Pawalian", "zh": "曬穀場"},
-    {"amis": "Panay", "zh": "水稻"}, {"amis": "Mato’asay", "zh": "長者"},
-    {"amis": "Pakimad", "zh": "敘事"}, {"amis": "Fafahiyan", "zh": "女性"},
-    {"amis": "Lipahak", "zh": "快樂"}, {"amis": "Lihaday", "zh": "悠閒"},
-    {"amis": "Mafoti’", "zh": "睡覺"}, {"amis": "Tapelik", "zh": "海浪"},
-    {"amis": "Riyar", "zh": "海洋"}, {"amis": "Omah", "zh": "田地"},
-    {"amis": "Lamal", "zh": "火"}, {"amis": "O’ol", "zh": "雲霧"},
-    {"amis": "Mitiliday", "zh": "學生"}, {"amis": "Satapang", "zh": "開始"}
-]
+# 第一性原理：數據底層定義
+TEXT = """
+Mahakakerem ko romi’ad, matengil to ko soni no tanikay, satapang saho sa afesa’ sa makaleng ko soni, matenes to mato mafana’ay a misalof to soni, safangcal sato a matengil. Yo madodem to ko kakarayan masadak to ko fo’is, mato sonol sanay to ko soni, sa fangcal sato a tengilen.
 
-# 2. 初始化應用狀態 (Session State)
-if 'index_list' not in st.session_state:
-    st.session_state.index_list = list(range(len(WORDS_DATA)))
-    random.shuffle(st.session_state.index_list)
-    st.session_state.current_ptr = 0
-    st.session_state.show_answer = False
+O malingaday a maemin, sadak saho ko cidal lomowad to talakatayalan, tangasa sa micelem ko cidal ta minokay a pahanhan, deng to no romi’ad sa, mi’orongto to pitaw malalitemoh i rihi’ no facal sedi sa matatawa a malalicay, masasipalemed, ko nanay makadofah ko kinaira toni a mihecaan ato pali’ayaw to saki no dafak a tatayalen. Tada masinanotay, damsayay, fangcalay a niyaro’ koni.
 
-# 3. UI 構建：重建純粹的測試框架
-st.set_page_config(page_title="阿美語誦讀測試", layout="centered")
-st.title("🏹 原理級：阿美語詞彙誦讀測試")
+Masadak to ko folad, seriw seriw sa ko fali, nengneng han ko lawac no lalan macelak to ko hana. Mato maemin masafaeloh masanek ko fali nona pala, seriw seriw sa nai rengorengosan. Tengil han to ko soni no tanikay ngalengalef saan mato pasenengay, masinanot mato pahinoker sanay to tona palapalaan a masoni.
+
+Sacikacikay sa i pawalian to panay a malawla ko wawa, o mato’asay sa maro’ i falaw mahaholol, pakimad. O fafahiyan sa i, mitapid to macicihay a riko’, roma i, miparpar to pinawali a padaka. Talacowa caay ka samaan ko ’orip i niyaro’, nika nengneng han ko tamdaw maemin lipahak lihaday makadofah ko ’orip.
+
+Mato caho katenes ko ’aro, kafahalan sa o tenok to no lafii, tengil han cecacecay to ko soni, lahedaw sato ko soni no tanikay, o folad mamicelem to, polong no hekal maemin to awa to ko ades’es no soni. talalemed to ko tamdamdaw a mafoti’, patedi han no folad ko widawidan no panay, seriw seriw han no fali sa matiya sa o tapelik no riyar a manengneng.
+
+Caho ka taengad ko romi’ad, mi’orong to to sakatayal mililis to rihi’ no omah ko malingaday, misatapang to malingad a matayal. Caho caho katenes conihal to ko wali masadak to ko matiyaay o lamal a cidal patedi to hekal, sa maliemi sato ko o’ol i rengorengosan ato i papah no kilang a manengneng. Satapang to rarawraw ko tamdaw no niyaro’, o mitiliday sa matatawatawa to i lalan talapitilidan, o satapangan to no niyaro’ koni a romi’ad.
+"""
+
+def count_syllables(word):
+    # 阿美語音節邏輯：元音 (a, e, i, o, u) 以及喉塞音 (') 作為發音單位
+    # 這裡以元音字母作為判斷基礎
+    vowels = "aeiouAEIOU"
+    return len([char for char in word if char in vowels])
+
+def get_multisyllabic_words(text):
+    # 移除非字母字符並拆解單詞
+    clean_text = re.sub(r'[^\w\s\u02bc\u0027]', '', text)
+    words = list(set(clean_text.split())) # 去重
+    return [w for w in words if count_syllables(w) >= 3]
+
+# --- Streamlit UI 設置 ---
+st.set_page_config(page_title="朗讀訓練機", layout="centered")
+st.title("🎙️ 朗讀訓練機 (Dadaya no niyaro’)")
 st.markdown("---")
 
-# 計算進度
-progress = (st.session_state.current_ptr + 1) / len(WORDS_DATA)
-st.progress(progress)
-st.write(f"進度：{st.session_state.current_ptr + 1} / {len(WORDS_DATA)}")
+tab1, tab2, tab3 = st.tabs(["🧩 音節詞卡 (發音練習)", "📏 單句訓練 (氣息控制)", "📖 段落訓練 (語境流動)"])
 
-# 獲取當前詞彙
-current_idx = st.session_state.index_list[st.session_state.current_ptr]
-word = WORDS_DATA[current_idx]
-
-# 4. 核心視覺區域
-with st.container():
-    # 使用大型字體呈現阿美語，強調視覺識別
-    st.markdown(f"""
-        <div style="text-align: center; padding: 50px; border: 2px solid #4CAF50; border-radius: 15px; background-color: #f9f9f9;">
-            <h1 style="font-size: 64px; color: #2E7D32; margin-bottom: 0;">{word['amis']}</h1>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.write("\n")
+# 第一部分：多音節詞卡
+with tab1:
+    st.header("多音節（3+）單詞挑戰")
+    words_list = get_multisyllabic_words(TEXT)
     
-    # 顯示答案邏輯
-    if st.session_state.show_answer:
-        st.info(f"💡 中文含義：{word['zh']}")
-    else:
-        st.write(" ")
+    if 'word_index' not in st.session_state:
+        st.session_state.word_index = 0
 
-# 5. 控制邏輯 (Logic Reconstruction)
-col1, col2, col3 = st.columns(3)
+    current_word = words_list[st.session_state.word_index]
+    
+    st.info("目標：精準發出每一個音節，注意舌頭位置。")
+    st.markdown(f"""
+    <div style="text-align: center; padding: 50px; border: 2px solid #4CAF50; border-radius: 15px; background-color: #f9f9f9;">
+        <h1 style="color: #2E7D32; font-size: 60px;">{current_word}</h1>
+        <p style="color: #666;">音節數: {count_syllables(current_word)}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ 上一個", use_container_width=True):
+            st.session_state.word_index = (st.session_state.word_index - 1) % len(words_list)
+            st.rerun()
+    with col2:
+        if st.button("下一個 ➡️", use_container_width=True):
+            st.session_state.word_index = (st.session_state.word_index + 1) % len(words_list)
+            st.rerun()
+    
+    st.caption(f"目前進度：{st.session_state.word_index + 1} / {len(words_list)}")
 
-with col1:
-    if st.button("顯示答案", use_container_width=True):
-        st.session_state.show_answer = True
-        st.rerun()
+# 第二部分：單句練習
+with tab2:
+    st.header("單句呼吸法練習")
+    # 使用正則表達式根據 , 和 . 拆分單句
+    sentences = re.split(r'[,.]', TEXT)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 5]
+    
+    st.write("在標點符號處完整停頓，並重新吸氣。")
+    for i, sen in enumerate(sentences):
+        with st.expander(f"句子 {i+1}"):
+            st.markdown(f"### {sen}")
+            st.button(f"標記為已練習 #{i}", key=f"btn_{i}")
 
-with col2:
-    if st.button("下一個 (Next)", type="primary", use_container_width=True):
-        if st.session_state.current_ptr < len(WORDS_DATA) - 1:
-            st.session_state.current_ptr += 1
-        else:
-            st.success("🎉 全部詞彙測試完成！重新打亂中...")
-            random.shuffle(st.session_state.index_list)
-            st.session_state.current_ptr = 0
-        st.session_state.show_answer = False
-        st.rerun()
+# 第三部分：段落練習
+with tab3:
+    st.header("全段落邏輯流動")
+    paragraphs = TEXT.strip().split("\n\n")
+    
+    for i, para in enumerate(paragraphs):
+        st.subheader(f"段落 {i+1}")
+        st.write(para)
+        st.divider()
 
-with col3:
-    if st.button("打亂重來", use_container_width=True):
-        random.shuffle(st.session_state.index_list)
-        st.session_state.current_ptr = 0
-        st.session_state.show_answer = False
-        st.rerun()
-
-st.markdown("---")
-st.caption("第一性原理提醒：誦讀的本質是口腔肌肉對拼音符號的物理反應，請專注於每一個 `'` 符號的停頓。")
+st.sidebar.markdown("""
+### 訓練說明
+1. **音節詞卡**：針對肌肉記憶，解決「舌頭打結」問題。
+2. **單句訓練**：針對「肺活量配速」，確保讀完一句才換氣。
+3. **段落練習**：針對「長時間專注度」。
+""")
