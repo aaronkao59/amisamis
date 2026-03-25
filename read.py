@@ -7,16 +7,19 @@ import io
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# 自定義 CSS
+# --- 核心 CSS 更新：移除硬編碼顏色，改用系統變數 ---
 st.markdown("""
 <style>
+    /* 詞卡：使用系統背景色變數 */
     .word-card {
         border: 2px solid #4CAF50;
         border-radius: 15px;
         padding: 30px 10px;
         text-align: center;
-        background-color: #ffffff;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        /* 使用 Streamlit 內建變數：自動隨主題切換背景與文字顏色 */
+        background-color: var(--secondary-bg-color); 
+        color: var(--text-color);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         margin-bottom: 20px;
         min-height: 120px;
         display: flex;
@@ -24,17 +27,20 @@ st.markdown("""
         align-items: center;
         justify-content: center;
     }
+    
+    /* 按鈕樣式：確保文字垂直居中與觸控友善 */
     .stButton > button {
         width: 100%;
-        padding: 0.4rem 0.2rem !important;
-        font-size: 0.85rem !important;
+        padding: 0.5rem 0.2rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 8px;
     }
-    [data-testid="column"] {
-        padding: 0 2px !important;
-    }
+
+    /* 中文翻譯框：使用帶有透明度的綠色，確保在深淺色背景下都能閱讀 */
     .cn-text-box {
-        color: #2E7D32;
-        background-color: #f1f8e9;
+        color: var(--text-color);
+        /* 使用 rgba 確保背景色在深色模式下不會太刺眼 */
+        background-color: rgba(76, 175, 80, 0.15); 
         padding: 15px;
         border-radius: 10px;
         border-left: 5px solid #4CAF50;
@@ -42,15 +48,16 @@ st.markdown("""
         line-height: 1.6;
         font-size: 0.95rem;
     }
-    .amis-text {
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: #1a1a1a;
+
+    /* 確保阿美語原文在深色模式下依然清晰 */
+    .stInfo {
+        background-color: rgba(30, 144, 255, 0.1) !important;
+        color: var(--text-color) !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 數據定義 ---
+# --- 數據定義 (保持不變) ---
 translation_map = {
     "Mahakakerem": "傍晚/天快黑時", "matengil": "聽見/聽到", "tanikay": "蟬", "satapang": "開始", 
     "afesa’": "響亮/嘶鳴", "makaleng": "清亮/嘹亮", "matenes": "很久", "mafana’ay": "會/明白", 
@@ -73,7 +80,6 @@ translation_map = {
     "mitiliday": "學生/讀書的人", "talapitilidan": "學校", "satapangan": "開始/起頭"
 }
 
-# 完整補回 25 句單句翻譯
 sent_trans = [
     "傍晚時分，聽見了蟬鳴聲，", "起初聲音斷斷續續，", "久了似乎熟練了鳴叫，變得悅耳。", 
     "當天空變暗星星出現，", "聲音像是順流而下般好聽。",
@@ -145,26 +151,22 @@ with tabs[0]:
         st.session_state.w_flip = not st.session_state.w_flip
         st.rerun()
 
-# --- Tab 2: 單句朗讀訓練 (順序修正) ---
+# --- Tab 2: 單句朗讀訓練 ---
 with tabs[1]:
     st.subheader("單句朗讀訓練")
     sents = re.findall(r'（(.*?)）', raw_text_content, re.DOTALL)
     for i, s in enumerate(sents):
         s = s.strip()
         with st.container():
-            # 1. 阿美語原文
-            st.info(s)
+            st.info(s) # st.info 會自動根據主題變色
             
-            # 2. 中文翻譯框 (展開時)
             if st.session_state.get(f"s_cn_{i}", False):
                 st.markdown(f'<div class="cn-text-box">{sent_trans[i] if i < len(sent_trans) else "（翻譯內容更新中）"}</div>', unsafe_allow_html=True)
             
-            # 3. 顯示中文按鈕 (位於中文翻譯框下方)
             if st.button("顯示/隱藏中文翻譯", key=f"show_s_cn_{i}"):
                 st.session_state[f"s_cn_{i}"] = not st.session_state.get(f"s_cn_{i}", False)
                 st.rerun()
                 
-            # 4. 播放與評分列
             c1, c2 = st.columns([1, 2])
             if c1.button("🔊 播放句子", key=f"play_s_{i}"):
                 audio = speak(s)
@@ -172,7 +174,7 @@ with tabs[1]:
             c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{i}", horizontal=True, label_visibility="collapsed")
             st.divider()
 
-# --- Tab 3: 段落練習 (移除顯示中文按鈕) ---
+# --- Tab 3: 段落練習 ---
 with tabs[2]:
     st.subheader("段落練習 (共 6 段)")
     paras_list = [p.strip() for p in raw_text_content.split('\n\n') if p.strip()]
@@ -180,10 +182,7 @@ with tabs[2]:
     for i, p in enumerate(paras_list):
         clean_p = re.sub(r'[（）]', '', p)
         with st.expander(f"第 {i+1} 段", expanded=True):
-            # 1. 阿美語原文
             st.write(clean_p)
-            
-            # 2. 播放與評分列 (此處不再顯示中文按鈕)
             c1, c2 = st.columns([1, 2])
             if c1.button("🔊 播放全段", key=f"play_p_{i}"):
                 audio = speak(clean_p)
