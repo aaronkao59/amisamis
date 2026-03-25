@@ -32,14 +32,14 @@ st.markdown("""
     [data-testid="column"] {
         padding: 0 2px !important;
     }
-    .cn-text {
+    .cn-text-box {
         color: #2E7D32;
-        font-weight: bold;
-        margin-top: 10px;
-        margin-bottom: 10px;
-        padding: 10px;
         background-color: #f1f8e9;
+        padding: 15px;
+        border-radius: 10px;
         border-left: 5px solid #4CAF50;
+        margin: 10px 0;
+        line-height: 1.6;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -70,8 +70,8 @@ translation_map = {
 # 6 段中文翻譯
 para_trans = [
     "傍晚時分，聽見了蟬鳴聲，起初聲音斷斷續續，久了似乎熟練了鳴叫，變得悅耳。當天空變暗星星出現，聲音像是順流而下般好聽。",
-    "耕作的人，太陽剛出來就起床去工作，直到夕陽西下才回家休息，整天辛苦工作，扛著鋤頭在田埂邊相遇，說笑聊天，互相祝福，希望今年產量豐收，也為明天的工作預備。這是一個整潔、溫馨、美麗的部落。",
-    "月亮出來了，涼風徐徐，看那路邊花朵盛開。大地似乎充滿了清新的氣息，從草叢中傳來陣陣涼風。聽那蟬鳴聲更加響亮，彷彿在誇耀，像是讓這片大地平靜下來般鳴叫著。",
+    "耕作的人，太陽剛出來就去工作，直到夕陽西下才回家休息，整天辛苦工作，扛著鋤頭在田埂邊相遇，說笑聊天，互相祝福，希望今年產量豐收，也為明天的工作預備。這是一個整潔、溫馨、美麗的部落。",
+    "月亮出來了，涼風徐徐，看那路邊花朵盛開。大地似乎充滿了清新的氣息，從草叢中傳來陣陣涼風。聽那蟬鳴聲更加響亮，彷彿在誇耀，又像是讓這片大地平靜下來。",
     "孩子們在曬穀場跑來跑去玩耍，長者坐在走廊聊天、講故事。婦女們在縫補破舊的衣服，或者在整理曝曬的乾菜。雖然部落生活簡單，但看每個人都過得快樂安詳、生活充實。",
     "坐沒多久，突然到了深夜，聽見聲音一個個消失，蟬鳴聲不見了，月亮要下山了，全世界靜悄悄。人們進入夢鄉，月光照在稻穗上，微風吹過像海浪波動。",
     "天還沒亮，農夫扛著工具沿著田邊出發工作，開始工作。沒多久東方變亮，火紅的太陽照耀大地，草地與樹葉上的露珠閃閃發亮。部落的人開始喧鬧，學生說笑走在路上上學，這是部落一天的開始。"
@@ -98,14 +98,14 @@ def speak(text):
         return fp
     except: return None
 
-# --- 初始化 ---
+# --- Session State 初始化 ---
 if 'word_list' not in st.session_state:
     st.session_state.word_list = sorted(list(translation_map.keys()))
 if 'w_idx' not in st.session_state: st.session_state.w_idx = 0
 if 'w_flip' not in st.session_state: st.session_state.w_flip = False
 
 # --- App 介面 ---
-st.title("🎙️ 朗讀訓練機")
+st.title("菁英朗讀訓練機")
 tabs = st.tabs(["🎴 生詞詞卡", "📏 單句朗讀訓練", "📄 段落練習"])
 
 # --- Tab 1: 生詞詞卡 ---
@@ -113,20 +113,28 @@ with tabs[0]:
     curr_w = st.session_state.word_list[st.session_state.w_idx]
     display = translation_map[curr_w] if st.session_state.w_flip else curr_w
     st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{st.session_state.w_idx+1}/{len(st.session_state.word_list)}</p></div>', unsafe_allow_html=True)
+    
     cols = st.columns([1, 1, 1, 1, 1.2]) 
-    if cols[0].button("⬅️ 上個"):
-        st.session_state.w_idx = (st.session_state.w_idx - 1) % len(st.session_state.word_list); st.session_state.w_flip = False; st.rerun()
-    if cols[1].button("🔊 發音"):
-        audio = speak(curr_w); 
+    if cols[0].button("⬅️ 往前", key="prev_w"):
+        st.session_state.w_idx = (st.session_state.w_idx - 1) % len(st.session_state.word_list)
+        st.session_state.w_flip = False
+        st.rerun()
+    if cols[1].button("🔊 發音", key="play_w"):
+        audio = speak(curr_w)
         if audio: st.audio(audio)
-    if cols[2].button("➡️ 下個"):
-        st.session_state.w_idx = (st.session_state.w_idx + 1) % len(st.session_state.word_list); st.session_state.w_flip = False; st.rerun()
-    if cols[3].button("🔀 打亂"):
-        random.shuffle(st.session_state.word_list); st.session_state.w_idx = 0; st.rerun()
-    if cols[4].button("🔄 翻轉/中文"):
-        st.session_state.w_flip = not st.session_state.w_flip; st.rerun()
+    if cols[2].button("➡️ 向後", key="next_w"):
+        st.session_state.w_idx = (st.session_state.w_idx + 1) % len(st.session_state.word_list)
+        st.session_state.w_flip = False
+        st.rerun()
+    if cols[3].button("🔀 隨機", key="shuffle_w"):
+        random.shuffle(st.session_state.word_list)
+        st.session_state.w_idx = 0
+        st.rerun()
+    if cols[4].button("🔄 翻轉/中文", key="flip_w"):
+        st.session_state.w_flip = not st.session_state.w_flip
+        st.rerun()
 
-# --- Tab 2: 單句朗讀訓練 ---
+# --- Tab 2: 單句朗讀訓練 (保持原樣) ---
 with tabs[1]:
     st.subheader("單句朗讀訓練")
     sents = re.findall(r'（(.*?)）', raw_text_content, re.DOTALL)
@@ -134,43 +142,40 @@ with tabs[1]:
         s = s.strip()
         with st.container():
             st.info(s)
-            # 中文顯示邏輯
-            if st.session_state.get(f"s_cn_{i}", False):
-                st.markdown(f'<div class="cn-text">{para_trans[0] if i==0 else "（對應翻譯中...）"}</div>', unsafe_allow_html=True) # 此處應對應具體單句，為簡化代碼邏輯，建議單句翻譯另存清單
             if st.button("顯示中文", key=f"show_s_cn_{i}"):
-                st.session_state[f"s_cn_{i}"] = not st.session_state.get(f"s_cn_{i}", False); st.rerun()
+                st.session_state[f"s_cn_{i}"] = not st.session_state.get(f"s_cn_{i}", False)
+            if st.session_state.get(f"s_cn_{i}", False):
+                st.markdown(f'<div class="cn-text-box">{para_trans[0][:10]}... (單句翻譯對照功能預留)</div>', unsafe_allow_html=True) # 單句翻譯可依需細分
             c1, c2 = st.columns([1, 2])
             if c1.button("🔊 播放句子", key=f"play_s_{i}"):
-                audio = speak(s); 
+                audio = speak(s)
                 if audio: st.audio(audio)
             c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{i}", horizontal=True, label_visibility="collapsed")
             st.divider()
 
-# --- Tab 3: 段落練習 ---
+# --- Tab 3: 段落練習 (修正按鈕位置) ---
 with tabs[2]:
-    st.subheader("段落練習")
+    st.subheader("段落練習 (共 6 段)")
     paras_list = [p.strip() for p in raw_text_content.split('\n\n') if p.strip()]
     
     for i, p in enumerate(paras_list):
         clean_p = re.sub(r'[（）]', '', p)
         with st.expander(f"第 {i+1} 段", expanded=True):
-            # 1. 阿美語段落
+            # 1. 阿美語原文
             st.write(clean_p)
             
-            # 2. 中文翻譯段落 (若開啟)
-            if st.session_state.get(f"p_cn_{i}", False):
-                st.markdown(f'<div class="cn-text">{para_trans[i] if i < len(para_trans) else ""}</div>', unsafe_allow_html=True)
-            
-            # 3. 顯示中文按鈕 (放在中文段落下方)
-            if st.button("顯示中文", key=f"show_p_cn_{i}"):
-                st.session_state[f"p_cn_{i}"] = not st.session_state.get(f"p_cn_{i}", False)
-                st.rerun()
-
-            st.write("") # 增加一點間距
-            
-            # 4. 音頻與評分
+            # 2. 播放與評分列
             c1, c2 = st.columns([1, 2])
             if c1.button("🔊 播放全段", key=f"play_p_{i}"):
                 audio = speak(clean_p)
                 if audio: st.audio(audio)
             c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{i}", horizontal=True, label_visibility="collapsed")
+            
+            # 3. 中文段落 (根據狀態顯示)
+            if st.session_state.get(f"p_cn_show_{i}", False):
+                st.markdown(f'<div class="cn-text-box">{para_trans[i]}</div>', unsafe_allow_html=True)
+            
+            # 4. 顯示中文按鈕 (放在中文段落下方)
+            if st.button("顯示/隱藏中文翻譯", key=f"btn_p_cn_{i}"):
+                st.session_state[f"p_cn_show_{i}"] = not st.session_state.get(f"p_cn_show_{i}", False)
+                st.rerun()
