@@ -1,8 +1,16 @@
 import streamlit as st
 import re
+import random
+from gtts import gTTS
+import io
 
-# 第一性原理：數據底層定義
-TEXT = """
+# --- 初始設定 ---
+st.set_page_config(page_title="朗讀訓練機", layout="wide")
+st.title("🎙️ 朗讀訓練機")
+
+# --- 文本資料 ---
+article_title = "Dadaya no niyaro’"
+raw_text = """
 Mahakakerem ko romi’ad, matengil to ko soni no tanikay, satapang saho sa afesa’ sa makaleng ko soni, matenes to mato mafana’ay a misalof to soni, safangcal sato a matengil. Yo madodem to ko kakarayan masadak to ko fo’is, mato sonol sanay to ko soni, sa fangcal sato a tengilen.
 
 O malingaday a maemin, sadak saho ko cidal lomowad to talakatayalan, tangasa sa micelem ko cidal ta minokay a pahanhan, deng to no romi’ad sa, mi’orongto to pitaw malalitemoh i rihi’ no facal sedi sa matatawa a malalicay, masasipalemed, ko nanay makadofah ko kinaira toni a mihecaan ato pali’ayaw to saki no dafak a tatayalen. Tada masinanotay, damsayay, fangcalay a niyaro’ koni.
@@ -16,81 +24,102 @@ Mato caho katenes ko ’aro, kafahalan sa o tenok to no lafii, tengil han cecace
 Caho ka taengad ko romi’ad, mi’orong to to sakatayal mililis to rihi’ no omah ko malingaday, misatapang to malingad a matayal. Caho caho katenes conihal to ko wali masadak to ko matiyaay o lamal a cidal patedi to hekal, sa maliemi sato ko o’ol i rengorengosan ato i papah no kilang a manengneng. Satapang to rarawraw ko tamdaw no niyaro’, o mitiliday sa matatawatawa to i lalan talapitilidan, o satapangan to no niyaro’ koni a romi’ad.
 """
 
+# --- 工具函數 ---
 def count_syllables(word):
-    # 阿美語音節邏輯：元音 (a, e, i, o, u) 以及喉塞音 (') 作為發音單位
-    # 這裡以元音字母作為判斷基礎
-    vowels = "aeiouAEIOU"
-    return len([char for char in word if char in vowels])
+    # 簡單音節計算：計算母音出現次數 (a, e, i, o, u)
+    word = word.lower()
+    return len(re.findall(r'[aeiou]', word))
 
-def get_multisyllabic_words(text):
-    # 移除非字母字符並拆解單詞
-    clean_text = re.sub(r'[^\w\s\u02bc\u0027]', '', text)
-    words = list(set(clean_text.split())) # 去重
-    return [w for w in words if count_syllables(w) >= 3]
+def speak(text):
+    # 使用 gTTS 生成音檔
+    # 註：阿美語並非 gTTS 官方支援，這裡暫用 'id' (印尼語) 或 'it' (義大利語) 模擬語音邏輯
+    tts = gTTS(text=text, lang='it') 
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    return fp
 
-# --- Streamlit UI 設置 ---
-st.set_page_config(page_title="朗讀訓練機", layout="centered")
-st.title("🎙️ 朗讀訓練機 (Dadaya no niyaro’)")
-st.markdown("---")
+# --- 資料處理 ---
+# 提取 3 音節以上詞彙
+words_list = sorted(list(set(re.findall(r'\b\w+’?\b', raw_text))))
+long_words = [w for w in words_list if count_syllables(w) >= 3]
 
-tab1, tab2, tab3 = st.tabs(["🧩 音節詞卡 (發音練習)", "📏 單句訓練 (氣息控制)", "📖 段落訓練 (語境流動)"])
+# 模擬中文對照表（實際應用時需補完）
+translation_map = {w: "（中文意思預留位）" for w in long_words}
 
-# 第一部分：多音節詞卡
-with tab1:
-    st.header("多音節（3+）單詞挑戰")
-    words_list = get_multisyllabic_words(TEXT)
+# --- Session State 初始化 ---
+if 'word_idx' not in st.session_state:
+    st.session_state.word_idx = 0
+if 'shuffled_words' not in st.session_state:
+    st.session_state.shuffled_words = long_words.copy()
+if 'flip_card' not in st.session_state:
+    st.session_state.flip_card = False
+
+# --- App 導航 ---
+tabs = st.tabs(["🎴 多音節詞卡測試", "📏 單句練習", "📄 段落練習"])
+
+# --- 第一部分：詞卡測試 ---
+with tabs[0]:
+    st.header("多音節詞卡")
     
-    if 'word_index' not in st.session_state:
-        st.session_state.word_index = 0
+    col1, col2, col3, col4 = st.columns(4)
+    if col1.button("⬅️ 上一個"):
+        st.session_state.word_idx = (st.session_state.word_idx - 1) % len(st.session_state.shuffled_words)
+        st.session_state.flip_card = False
+    if col2.button("➡️ 下一個"):
+        st.session_state.word_idx = (st.session_state.word_idx + 1) % len(st.session_state.shuffled_words)
+        st.session_state.flip_card = False
+    if col3.button("🔀 打亂順序"):
+        random.shuffle(st.session_state.shuffled_words)
+        st.session_state.word_idx = 0
+    if col4.button("🔄 翻轉/顯示原文"):
+        st.session_state.flip_card = not st.session_state.flip_card
 
-    current_word = words_list[st.session_state.word_index]
+    # 詞卡顯示
+    current_word = st.session_state.shuffled_words[st.session_state.word_idx]
     
-    st.info("目標：精準發出每一個音節，注意舌頭位置。")
     st.markdown(f"""
-    <div style="text-align: center; padding: 50px; border: 2px solid #4CAF50; border-radius: 15px; background-color: #f9f9f9;">
-        <h1 style="color: #2E7D32; font-size: 60px;">{current_word}</h1>
-        <p style="color: #666;">音節數: {count_syllables(current_word)}</p>
+    <div style="border:2px solid #4CAF50; border-radius: 15px; padding: 50px; text-align: center; background-color: #f9f9f9;">
+        <h1 style="color: #2E7D32;">{"🔍 " + translation_map[current_word] if st.session_state.flip_card else current_word}</h1>
+        <p style="color: gray;">進度：{st.session_state.word_idx + 1} / {len(st.session_state.shuffled_words)}</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⬅️ 上一個", use_container_width=True):
-            st.session_state.word_index = (st.session_state.word_index - 1) % len(words_list)
-            st.rerun()
-    with col2:
-        if st.button("下一個 ➡️", use_container_width=True):
-            st.session_state.word_index = (st.session_state.word_index + 1) % len(words_list)
-            st.rerun()
-    
-    st.caption(f"目前進度：{st.session_state.word_index + 1} / {len(words_list)}")
 
-# 第二部分：單句練習
-with tab2:
-    st.header("單句呼吸法練習")
-    # 使用正則表達式根據 , 和 . 拆分單句
-    sentences = re.split(r'[,.]', TEXT)
-    sentences = [s.strip() for s in sentences if len(s.strip()) > 5]
-    
-    st.write("在標點符號處完整停頓，並重新吸氣。")
-    for i, sen in enumerate(sentences):
-        with st.expander(f"句子 {i+1}"):
-            st.markdown(f"### {sen}")
-            st.button(f"標記為已練習 #{i}", key=f"btn_{i}")
+    if st.button("🔊 播放發音"):
+        audio_fp = speak(current_word)
+        st.audio(audio_fp, format='audio/mp3')
 
-# 第三部分：段落練習
-with tab3:
-    st.header("全段落邏輯流動")
-    paragraphs = TEXT.strip().split("\n\n")
+# --- 第二部分：單句練習 ---
+with tabs[1]:
+    st.header("單句練習")
+    # 使用正則表達式切分句子，保留標點
+    sentences = re.split(r'(?<=[,.])\s*', raw_text.strip())
+    
+    for i, sent in enumerate(sentences):
+        if sent.strip():
+            with st.container():
+                c1, c2, c3 = st.columns([0.6, 0.2, 0.2])
+                c1.write(f"**{i+1}.** {sent}")
+                if c2.button("🔊 播放", key=f"sent_btn_{i}"):
+                    st.audio(speak(sent), format='audio/mp3')
+                c3.radio("狀態", ["尚未選擇", "通過", "待加強", "未通過"], key=f"check_sent_{i}", label_visibility="collapsed")
+                st.divider()
+
+# --- 第三部分：段落練習 ---
+with tabs[2]:
+    st.header("段落練習")
+    paragraphs = [p.strip() for p in raw_text.split('\n\n') if p.strip()]
     
     for i, para in enumerate(paragraphs):
-        st.subheader(f"段落 {i+1}")
-        st.write(para)
-        st.divider()
+        with st.expander(f"第 {i+1} 段", expanded=True):
+            st.write(para)
+            col_a, col_b = st.columns([0.2, 0.8])
+            if col_a.button("🔊 播放全段", key=f"para_btn_{i}"):
+                st.audio(speak(para), format='audio/mp3')
+            col_b.radio("評分", ["尚未選擇", "通過", "待加強", "未通過"], key=f"check_para_{i}", horizontal=True)
 
-st.sidebar.markdown("""
-### 訓練說明
-1. **音節詞卡**：針對肌肉記憶，解決「舌頭打結」問題。
-2. **單句訓練**：針對「肺活量配速」，確保讀完一句才換氣。
-3. **段落練習**：針對「長時間專注度」。
-""")
+# --- 側邊欄資訊 ---
+with st.sidebar:
+    st.subheader("統計數據")
+    st.write(f"總詞彙數：{len(words_list)}")
+    st.write(f"多音節詞（>=3）：{len(long_words)}")
+    st.info("提示：詞卡模式可點擊「翻轉」查看中文意思（範例已預留欄位）。")
