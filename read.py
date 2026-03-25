@@ -7,33 +7,91 @@ import io
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# 自定義 CSS 以優化移動端體驗與詞卡樣式
+# 自定義 CSS：縮小按鈕間距、優化詞卡外觀、確保電腦上一排顯示
 st.markdown("""
 <style>
     .word-card {
         border: 2px solid #4CAF50;
-        border-radius: 20px;
-        padding: 60px 20px;
+        border-radius: 15px;
+        padding: 30px 10px;
         text-align: center;
         background-color: #ffffff;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
-        min-height: 200px;
+        min-height: 120px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
     }
-    .stButton>button {
+    .stButton > button {
         width: 100%;
-        border-radius: 10px;
+        padding: 0.4rem 0.2rem !important;
+        font-size: 0.85rem !important;
+    }
+    /* 縮小 columns 間的預設間距 */
+    [data-testid="column"] {
+        padding: 0 2px !important;
+    }
+    .cn-text {
+        color: #2E7D32;
+        font-weight: bold;
+        margin-top: 10px;
+        border-top: 1px dashed #ccc;
+        padding-top: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 原始文章內容 ---
-article_text = """
-文章名稱：[Dadaya no niyaro’]		
-（Mahakakerem ko romi’ad, matengil to ko soni no tanikay,）（ satapang saho sa afesa’ sa makaleng ko soni, ）（matenes to mato mafana’ay a misalof to soni,safangcal sato a matengil. ）（Yo madodem to ko kakarayan masadak to ko fo’is,）（ mato sonol sanay to ko soni, sa fangcal sato a tengilen.）
+# --- 數據定義 ---
+# 生詞翻譯字典 (3音節以上)
+translation_map = {
+    "Mahakakerem": "傍晚/天快黑時", "matengil": "聽見/聽到", "tanikay": "蟬", "satapang": "開始", 
+    "afesa’": "響亮/嘶鳴", "makaleng": "清亮/嘹亮", "matenes": "很久", "mafana’ay": "會/明白", 
+    "misalof": "修理/修正", "safangcal": "變美/變好", "madodem": "變暗/陰暗", "kakarayan": "天空", 
+    "masadak": "出現/出來", "tengilen": "聽", "malingaday": "耕作的人/農夫", "lomowad": "起床/出發", 
+    "talakatayalan": "工作的地方", "tangasa": "到達", "micelem": "沒入/落山", "minokay": "回家", 
+    "pahanhan": "休息", "mi’orongto": "扛著", "malalitemoh": "相遇/遇見", "malalicay": "交談/聊天", 
+    "masasipalemed": "互相祝福", "makadofah": "豐富/豐收", "kinaira": "產量/獲收", "mihecaan": "年度/年", 
+    "pali’ayaw": "預備/準備", "tatayalen": "要做的工作", "masinanotay": "整潔的", "damsayay": "溫暖/親切", 
+    "fangcalay": "美麗的/好的", "niyaro’": "部落", "macelak": "盛開/綻放", "masafaeloh": "全新的/變新", 
+    "masanek": "氣味/聞起來", "rengorengosan": "草叢", "ngalengalef": "更加/越發", "pasenengay": "誇耀/自豪", 
+    "masinanot": "整潔/有條理", "pahinoker": "平靜/安靜", "palapalaan": "大地/荒野", "sacikacikay": "跑來跑去", 
+    "pawalian": "曬穀場", "malawla": "嬉戲/玩耍", "mato’asay": "長者/老人", "mahaholol": "聊天/聚談", 
+    "pakimad": "講故事", "fafahiyan": "女性/婦女", "mitapid": "縫補/編織", "macicihay": "破舊的", 
+    "miparpar": "鋪開/攤開", "pinawali": "曝曬", "lipahak": "快樂", "lihaday": "安詳/自在", 
+    "katenes": "很久", "kafahalan": "突然/深夜", "cecacecay": "一個接一個", "lahedaw": "消失/不見", 
+    "ades’es": "吵雜/喧鬧", "talalemed": "入夢/幸運", "mafoti’": "睡覺", "widawidan": "稻穗", 
+    "manengneng": "看見/看到", "taengad": "天亮/黎明", "sakatayal": "工具/器具", "mililis": "沿著邊緣", 
+    "misatapang": "開始(做)", "conihal": "放晴/太陽出來", "matiyaay": "像是...一樣", "rarawraw": "喧嘩/吵鬧", 
+    "mitiliday": "學生/讀書的人", "talapitilidan": "學校", "satapangan": "開始/起頭"
+}
+
+# 單句翻譯
+sent_trans = [
+    "傍晚時分，聽見了蟬鳴聲，", "起初聲音斷斷續續，", "久了似乎熟練了鳴叫，變得悅耳。", 
+    "當天空變暗星星出現，", "聲音像是順流而下般好聽。",
+    "耕作的人，太陽剛出來就起床去工作，", "直到夕陽西下才回家休息，",
+    "整天辛苦工作，扛著鋤頭在田埂邊相遇，說笑聊天，", "互相祝福，希望今年產量豐收，也為明天的工作預備。", "這是一個整潔、溫馨、美麗的部落。",
+    "月亮出來了，涼風徐徐，", "看那路邊花朵盛開。", "大地似乎充滿了清新的氣息，從草叢中傳來陣陣涼風。",
+    "聽那蟬鳴聲更加響亮，彷彿在誇耀，", "像是讓這片大地平靜下來般鳴叫著。",
+    "孩子們在曬穀場跑來跑去玩耍，", "長者坐在走廊聊天、講故事。", "婦女們在縫補破舊的衣服，或者在整理曝曬的乾菜。",
+    "雖然部落生活簡單，", "但看每個人都過得快樂安詳、生活充實。",
+    "坐沒多久，突然到了深夜，", "聽見聲音一個個消失，蟬鳴聲不見了，", "月亮要下山了，全世界靜悄悄。",
+    "人們進入夢鄉，月光照在稻穗上，", "微風吹過像海浪波動。",
+    "天還沒亮，農夫扛著工具沿著田邊出發工作，開始工作。沒多久東方變亮，火紅的太陽照耀大地，草地與樹葉上的露珠閃閃發亮。部落的人開始喧鬧，學生說笑走在路上上學，這是部落一天的開始。"
+]
+
+# 段落翻譯 (合併後)
+para_trans = [
+    "傍晚時分，聽見了蟬鳴聲，起初聲音斷斷續續，久了似乎熟練了鳴叫，變得悅耳。當天空變暗星星出現，聲音像是順流而下般好聽。",
+    "耕作的人，太陽剛出來就去工作，直到夕陽西下才回家休息，整天辛苦工作，扛著鋤頭在田埂邊相遇，說笑聊天，互相祝福，希望今年產量豐收，也為明天的工作預備。這是一個整潔、溫馨、美麗的部落。",
+    "月亮出來了，涼風徐徐，看那路邊花朵盛開。大地似乎充滿了清新的氣息，從草叢中傳來陣陣涼風。聽那蟬鳴聲更加響亮，彷彿在誇耀，又像是讓這片大地平靜下來。",
+    "孩子們在曬穀場跑來跑去玩耍，長者坐在走廊聊天、講故事。婦女們在縫補破舊的衣服，或者在整理曝曬的乾菜。雖然部落生活簡單，但看每個人都過得快樂安詳、生活充實。",
+    "坐沒多久，突然到了深夜，聽見聲音一個個消失，蟬鳴聲不見了，月亮要下山了，全世界靜悄悄。人們進入夢鄉，月光照在稻穗上，微風吹過像海浪波動。天還沒亮，農夫扛著工具沿著田邊出發工作。沒多久東方變亮，火紅的太陽照耀大地，草地與樹葉上的露珠閃閃發亮。部落的人開始喧鬧，學生說笑走在路上上學，這是部落一天的開始。"
+]
+
+raw_text = """（Mahakakerem ko romi’ad, matengil to ko soni no tanikay,）（ satapang saho sa afesa’ sa makaleng ko soni, ）（matenes to mato mafana’ay a misalof to soni,safangcal sato a matengil. ）（Yo madodem to ko kakarayan masadak to ko fo’is,）（ mato sonol sanay to ko soni, sa fangcal sato a tengilen.）
 
 （O malingaday a maemin, sadak saho ko cidal lomowad to talakatayalan, ）（tangasa sa micelem ko cidal ta minokay a pahanhan, ）（deng to no romi’ad sa, mi’orongto to pitaw malalitemoh i rihi’ no facal sedi sa matatawa a malalicay,）（ masasipalemed, ko nanay makadofah ko kinaira toni a mihecaan ato pali’ayaw to saki no dafak a tatayalen. ）（Tada masinanotay, damsayay, fangcalay a niyaro’ koni.）
 
@@ -42,107 +100,98 @@ article_text = """
 （Sacikacikay sa i pawalian to panay a malawla ko wawa, ）（o mato’asay sa maro’ i falaw mahaholol, pakimad. ）（O fafahiyan sa i, mitapid to macicihay a riko’, roma i, miparpar to pinawali a padaka. ）（Talacowa caay ka samaan ko ’orip i niyaro’,）（ nika nengneng han ko tamdaw maemin lipahak lihaday makadofah ko ’orip.）
 
 （Mato caho katenes ko ’aro, kafahalan sa o tenok to no lafii, ）（tengil han cecacecay to ko soni, lahedaw sato ko soni no tanikay, ）（o folad mamicelem to, polong no hekal maemin to awa to ko ades’es no soni. ）（talalemed to ko tamdamdaw a mafoti’, patedi han no folad ko widawidan no panay,）（ seriw seriw han no fali sa matiya sa o tapelik no riyar a manengneng.）
-			
-（Caho ka taengad ko romi’ad, mi’orong to to sakatayal mililis to rihi’ no omah ko malingaday, ）（misatapang to malingad a matayal. ）（Caho caho katenes conihal to ko wali masadak to ko matiyaay o lamal a cidal patedi to hekal, ）（sa maliemi sato ko o’ol i rengorengosan ato i papah no kilang a manengneng. ）（Satapang to rarawraw ko tamdaw no niyaro’, ）（o mitiliday sa matatawatawa to i lalan talapitilidan, o satapangan to no niyaro’ koni a romi’ad.）
-"""
 
-# --- 資料處理函數 ---
-def get_long_words(text):
-    clean_text = re.sub(r'[（）]', '', text)
-    words = re.findall(r'\b\w+’?\b', clean_text)
-    vowels = 'aeiouAEIOU'
-    # 計算音節：計算母音出現次數
-    long_words = [w for w in set(words) if sum(1 for char in w if char in vowels) >= 3]
-    return sorted(long_words)
+（Caho ka taengad ko romi’ad, mi’orong to to sakatayal mililis to rihi’ no omah ko malingaday, ）（misatapang to malingad a matayal. ）（Caho caho katenes conihal to ko wali masadak to ko matiyaay o lamal a cidal patedi to hekal, ）（sa maliemi sato ko o’ol i rengorengosan ato i papah no kilang a manengneng. ）（Satapang to rarawraw ko tamdaw no niyaro’, ）（o mitiliday sa matatawatawa to i lalan talapitilidan, o satapangan to no niyaro’ koni a romi’ad.）"""
 
-def play_audio(text):
+# --- 工具函數 ---
+def speak(text):
     try:
-        tts = gTTS(text=text, lang='it') # 阿美語暫以義大利語引擎模擬發音效果較佳
+        tts = gTTS(text=text, lang='it')
         fp = io.BytesIO()
         tts.write_to_fp(fp)
-        st.audio(fp, format='audio/mp3')
-    except:
-        st.error("語音生成失敗，請檢查網路連接。")
+        return fp
+    except: return None
 
-# --- 初始化狀態 ---
-if 'words' not in st.session_state:
-    st.session_state.words = get_long_words(article_text)
-if 'word_idx' not in st.session_state:
-    st.session_state.word_idx = 0
-if 'show_chinese' not in st.session_state:
-    st.session_state.show_chinese = False
+# --- Session State 初始化 ---
+if 'word_list' not in st.session_state:
+    st.session_state.word_list = sorted(list(translation_map.keys()))
+if 'w_idx' not in st.session_state: st.session_state.w_idx = 0
+if 'w_flip' not in st.session_state: st.session_state.w_flip = False
 
-# --- App 標題 ---
+# --- App 介面 ---
 st.title("🎙️ 朗讀訓練機")
+tabs = st.tabs(["🎴 生詞詞卡", "📏 單句練習", "📄 段落練習"])
 
-tab1, tab2, tab3 = st.tabs(["🎴 多音節詞卡", "📏 單句練習", "📄 段落練習"])
+# --- Tab 1: 生詞詞卡 ---
+with tabs[0]:
+    curr_w = st.session_state.word_list[st.session_state.w_idx]
+    display = translation_map[curr_w] if st.session_state.w_flip else curr_w
+    
+    st.markdown(f'<div class="word-card"><h2>{display}</h2><p>{st.session_state.w_idx+1}/{len(st.session_state.word_list)}</p></div>', unsafe_allow_html=True)
+    
+    cols = st.columns([1, 1, 1, 1, 1.2]) # 電腦版排成一排
+    if cols[0].button("⬅️ 上個"):
+        st.session_state.w_idx = (st.session_state.w_idx - 1) % len(st.session_state.word_list)
+        st.session_state.w_flip = False
+        st.rerun()
+    if cols[1].button("🔊 發音"):
+        audio = speak(curr_w)
+        if audio: st.audio(audio)
+    if cols[2].button("➡️ 下個"):
+        st.session_state.w_idx = (st.session_state.w_idx + 1) % len(st.session_state.word_list)
+        st.session_state.w_flip = False
+        st.rerun()
+    if cols[3].button("🔀 打亂"):
+        random.shuffle(st.session_state.word_list)
+        st.session_state.w_idx = 0
+        st.rerun()
+    if cols[4].button("🔄 翻轉/中文"):
+        st.session_state.w_flip = not st.session_state.w_flip
+        st.rerun()
 
-# --- 第一部分：詞卡功能 ---
-with tab1:
-    current_word = st.session_state.words[st.session_state.word_idx]
-    
-    # 詞卡顯示區
-    display_content = f"（中文意思預留）" if st.session_state.show_chinese else current_word
-    st.markdown(f'<div class="word-card"><h1>{display_content}</h1></div>', unsafe_allow_html=True)
-    
-    # 按鈕區 (放置於詞卡下方)
-    c1, c2, c3 = st.columns(3)
-    if c1.button("⬅️ 上一個"):
-        st.session_state.word_idx = (st.session_state.word_idx - 1) % len(st.session_state.words)
-        st.session_state.show_chinese = False
-        st.rerun()
-    if c2.button("🔊 發音"):
-        play_audio(current_word)
-    if c3.button("➡️ 下一個"):
-        st.session_state.word_idx = (st.session_state.word_idx + 1) % len(st.session_state.words)
-        st.session_state.show_chinese = False
-        st.rerun()
-        
-    c4, c5 = st.columns(2)
-    if c4.button("🔀 打亂順序"):
-        random.shuffle(st.session_state.words)
-        st.session_state.word_idx = 0
-        st.rerun()
-    if c5.button("🔄 翻轉/顯示中文"):
-        st.session_state.show_chinese = not st.session_state.show_chinese
-        st.rerun()
-    
-    st.caption(f"進度: {st.session_state.word_idx + 1} / {len(st.session_state.words)}")
+# --- Tab 2: 單句練習 ---
+with tabs[1]:
+    st.subheader("單句朗讀訓練")
+    sents = re.findall(r'（(.*?)）', raw_text, re.DOTALL)
+    for i, s in enumerate(sents):
+        s = s.strip()
+        with st.container():
+            st.info(s)
+            
+            # 顯示中文按鈕 (每句獨立)
+            if st.button("顯示中文", key=f"show_s_cn_{i}"):
+                st.session_state[f"s_cn_{i}"] = not st.session_state.get(f"s_cn_{i}", False)
+            if st.session_state.get(f"s_cn_{i}", False):
+                st.markdown(f'<div class="cn-text">{sent_trans[i] if i < len(sent_trans) else ""}</div>', unsafe_allow_html=True)
+                
+            c1, c2 = st.columns([1, 2])
+            if c1.button("🔊 播放", key=f"play_s_{i}"):
+                audio = speak(s)
+                if audio: st.audio(audio)
+            c2.radio("狀態", ["未通過", "待加強", "通過"], key=f"chk_s_{i}", horizontal=True, label_visibility="collapsed")
+            st.divider()
 
-# --- 第二部分：單句練習 ---
-with tab2:
-    st.subheader("以（）區分的單句訓練")
-    # 提取括號內的內容
-    sentences = re.findall(r'（(.*?)）', article_text, re.DOTALL)
+# --- Tab 3: 段落練習 ---
+with tabs[2]:
+    st.subheader("段落練習")
+    # 合併第五與第六段
+    paras_raw = [p.strip() for p in raw_text.split('\n\n') if p.strip()]
+    final_paras = paras_raw[:4]
+    if len(paras_raw) >= 6:
+        final_paras.append(paras_raw[4] + "\n" + paras_raw[5])
     
-    for i, sent in enumerate(sentences):
-        sent = sent.strip()
-        if sent:
-            with st.container():
-                st.write(f"**Sentence {i+1}:**")
-                st.info(sent)
-                col_audio, col_check = st.columns([1, 2])
-                with col_audio:
-                    if st.button(f"🔊 聆聽", key=f"audio_s_{i}"):
-                        play_audio(sent)
-                with col_check:
-                    st.radio("練習狀態", ["未通過", "待加強", "通過"], key=f"check_s_{i}", horizontal=True, label_visibility="collapsed")
-                st.markdown("---")
-
-# --- 第三部分：段落練習 ---
-with tab3:
-    st.subheader("全文段落訓練")
-    # 先按換行切分段落
-    raw_paragraphs = [p.strip() for p in article_text.split('\n\n') if "文章名稱" not in p and p.strip()]
-    
-    for i, para in enumerate(raw_paragraphs):
-        # 刪除括號
-        clean_para = re.sub(r'[（）]', '', para)
+    for i, p in enumerate(final_paras):
+        clean_p = re.sub(r'[（）]', '', p)
         with st.expander(f"第 {i+1} 段", expanded=True):
-            st.write(clean_para)
-            col_a, col_b = st.columns([1, 2])
-            with col_a:
-                if st.button(f"🔊 聆聽全段", key=f"audio_p_{i}"):
-                    play_audio(clean_para)
-            with col_b:
-                st.radio("評分", ["未通過", "待加強", "通過"], key=f"check_p_{i}", horizontal=True, label_visibility="collapsed")
+            st.write(clean_p)
+            
+            if st.button("顯示中文", key=f"show_p_cn_{i}"):
+                st.session_state[f"p_cn_{i}"] = not st.session_state.get(f"p_cn_{i}", False)
+            if st.session_state.get(f"p_cn_{i}", False):
+                st.markdown(f'<div class="cn-text">{para_trans[i] if i < len(para_trans) else ""}</div>', unsafe_allow_html=True)
+
+            c1, c2 = st.columns([1, 2])
+            if c1.button("🔊 播放全段", key=f"play_p_{i}"):
+                audio = speak(clean_p)
+                if audio: st.audio(audio)
+            c2.radio("狀態", ["未通過", "待加強", "通過"], key=f"chk_p_{i}", horizontal=True, label_visibility="collapsed")
