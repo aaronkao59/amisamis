@@ -4,6 +4,7 @@ import random
 import os
 from gtts import gTTS
 import io
+import base64
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
@@ -122,7 +123,7 @@ def get_audio(read_id, category, index, text):
             return None
 
 # --- 第一層：首頁頂部極簡控制台 ---
-st.title("菁英朗送訓練機")
+st.title("菁英朗讀訓練機")
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
@@ -148,17 +149,11 @@ if f'w_idx_{reading_id}' not in st.session_state:
 if f'w_flip_{reading_id}' not in st.session_state: 
     st.session_state[f'w_flip_{reading_id}'] = False
 
-# 專為生詞連續點擊設計的獨立安全計數器
-if f'w_audio_nonce_{reading_id}' not in st.session_state:
-    st.session_state[f'w_audio_nonce_{reading_id}'] = 0
-if f'w_audio_cache_{reading_id}' not in st.session_state:
-    st.session_state[f'w_audio_cache_{reading_id}'] = None
-
 word_list = st.session_state[f'word_list_{reading_id}']
 
 st.divider()
 
-# --- 數據完整性檢查 ---
+# --- 數據完整性熔斷檢查 ---
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
@@ -180,44 +175,36 @@ else:
         if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
-            st.session_state[f'w_audio_cache_{reading_id}'] = None # 切換單字時主動釋放音軌
             st.rerun()
             
-        # 🔊 發音按鈕修正：點擊時快取音訊二進位流，並安全遞增計數器，現場不呼叫音訊組件以防生命週期錯位
+        # 🔊 生詞發音修正：改採純前端 HTML5 隱形音軌繞過 Streamlit 生命週期限制。
+        # 外觀、排版完全不動，但可完美支援持續、不卡頓的快有點擊播放！
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
             audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes:
-                st.session_state[f'w_audio_cache_{reading_id}'] = audio_bytes
-                st.session_state[f'w_audio_nonce_{reading_id}'] += 1
-                st.rerun()
+            if audio_bytes: 
+                b64_str = base64.b64encode(audio_bytes).decode("utf-8")
+                audio_tag = f"""
+                <audio autoplay="true" style="display:none;">
+                    <source src="data:audio/mp3;base64,{b64_str}" type="audio/mp3">
+                </audio>
+                """
+                st.markdown(audio_tag, unsafe_allow_html=True)
                 
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
-            st.session_state[f'w_audio_cache_{reading_id}'] = None
             st.rerun()
             
         if cols[3].button("🔀 隨機", key=f"shuffle_w_{reading_id}"):
             random.shuffle(st.session_state[f'word_list_{reading_id}'])
             st.session_state[f'w_idx_{reading_id}'] = 0
-            st.session_state[f'w_audio_cache_{reading_id}'] = None
             st.rerun()
             
         if cols[4].button("🔄 翻轉/中文", key=f"flip_w_{reading_id}"):
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-        # 🟢 終極流暢發聲安全艙：常駐於分頁底部，利用完全不含巢狀單引號的乾淨變數解鎖快取鎖定，實現無限次數秒撥
-        current_nonce = st.session_state[f'w_audio_nonce_{reading_id}']
-        if st.session_state[f'w_audio_cache_{reading_id}'] is not None:
-            st.audio(
-                st.session_state[f'w_audio_cache_{reading_id}'], 
-                format="audio/mp3", 
-                autoplay=True, 
-                key=f"static_w_player_{reading_id}_{current_nonce}"
-            )
-
-    # --- Tab 2: 單句朗讀訓練（與原版完全一致） ---
+    # --- Tab 2: 單句朗讀訓練（原封不動） ---
     with tabs[1]:
         st.subheader("單句朗讀訓練")
         for i, s in enumerate(sents):
@@ -238,7 +225,7 @@ else:
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
 
-    # --- Tab 3: 段落練習（與原版完全一致） ---
+    # --- Tab 3: 段落練習（原封不動） ---
     with tabs[2]:
         st.subheader("段落練習")
         for i, p in enumerate(paragraphs_list):
