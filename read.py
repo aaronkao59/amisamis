@@ -6,66 +6,78 @@ from gtts import gTTS
 import io
 import base64
 
-# --- 頁面配置：強制優化移動端視口 ---
+# --- 頁面配置 ---
 st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 樣式控制層（全面適應移動端與多巴胺微交互） ---
+# --- 核心極簡 CSS 樣式控制層（去除所有雜亂元件，確保手機不變形） ---
 st.markdown("""
 <style>
-    /* 詞卡樣式：主動適應深淺色主題變數 */
-    .word-card {
-        border: 2px solid #4CAF50;
-        border-radius: 15px;
-        padding: 30px 10px;
+    /* 全局背景與字體微調 */
+    html, body, [data-testid="stAppViewContainer"] {
+        max-width: 600px !important; /* 限制全局最大寬度，防止在大螢幕或手機上橫向溢出變形 */
+        margin: 0 auto !important;
+    }
+
+    /* 詞卡：大面積、留白、極簡專業感 */
+    .word-card-container {
+        position: relative;
+        border: 1px solid rgba(128, 128, 128, 0.2);
+        border-radius: 16px;
+        padding: 40px 20px;
         text-align: center;
         background-color: var(--secondary-bg-color); 
         color: var(--text-color);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        margin-bottom: 15px;
-        min-height: 140px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        min-height: 180px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
     }
     
-    /* 按鈕移動端防誤觸與高度優化 */
-    .stButton > button {
-        width: 100%;
-        padding: 0.7rem 0.3rem !important; /* 放大點擊熱區，符合 44x44 pt 胖手指防禦 */
-        font-size: 1rem !important;
-        border-radius: 10px;
-        margin-bottom: 5px;
+    /* HTML5 純前端發音按鈕：漂浮在詞卡右下角，完全不佔用下方控制列空間 */
+    .native-play-icon {
+        position: absolute;
+        bottom: 15px;
+        right: 20px;
+        font-size: 28px;
+        cursor: pointer;
+        user-select: none;
+        transition: transform 0.1s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .native-play-icon:active {
+        transform: scale(0.85); /* 手機按壓的物理縮放回饋 */
     }
 
-    /* 獨立優化發音按鈕：極限視覺對比與觸控引導 */
-    .play-btn-container > button {
-        background-color: #4CAF50 !important;
-        color: white !important;
-        font-weight: bold !important;
-        font-size: 1.1rem !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    /* 底層控制按鈕：100% 寬度單列縱向堆疊，絕對不會因為螢幕窄而擠壓變形 */
+    .stButton > button {
+        width: 100% !important;
+        padding: 0.6rem 0rem !important;
+        font-size: 0.95rem !important;
+        border-radius: 10px;
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        background-color: transparent;
+        margin-bottom: 8px;
+    }
+
+    /* 單句原文與段落卡片優化 */
+    .stInfo {
+        background-color: rgba(30, 144, 255, 0.05) !important;
+        color: var(--text-color) !important;
+        border: 1px solid rgba(30, 144, 255, 0.15) !important;
+        border-radius: 10px !important;
     }
     
-    .play-btn-container > button:active {
-        transform: scale(0.98); /* 手機按壓微觀力學回饋 */
-    }
-
-    /* 中文翻譯對照框 */
     .cn-text-box {
         color: var(--text-color);
-        background-color: rgba(76, 175, 80, 0.15); 
-        padding: 15px;
+        background-color: rgba(76, 175, 80, 0.08); 
+        padding: 14px;
         border-radius: 10px;
-        border-left: 5px solid #4CAF50;
-        margin: 10px 0;
-        line-height: 1.6;
+        border-left: 4px solid #4CAF50;
+        margin: 8px 0;
         font-size: 0.95rem;
-    }
-
-    /* 隱藏原生音訊元件，防止撐開手機版面 */
-    .hidden-audio {
-        display: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -78,7 +90,6 @@ def load_reading_text(read_id):
     if not os.path.exists(base_path):
         return data
 
-    # 1. 生詞
     w_path = os.path.join(base_path, "words.txt")
     if os.path.exists(w_path):
         with open(w_path, "r", encoding="utf-8") as f:
@@ -87,19 +98,16 @@ def load_reading_text(read_id):
                     k, v = line.strip().split(":", 1)
                     data["translation_map"][k] = v
 
-    # 2. 單句原文
     s_path = os.path.join(base_path, "sentences.txt")
     if os.path.exists(s_path):
         with open(s_path, "r", encoding="utf-8") as f:
             data["sents"] = [line.strip() for line in f if line.strip()]
 
-    # 3. 單句翻譯
     st_path = os.path.join(base_path, "sent_trans.txt")
     if os.path.exists(st_path):
         with open(st_path, "r", encoding="utf-8") as f:
             data["sent_trans"] = [line.strip() for line in f if line.strip()]
 
-    # 4. 段落
     p_path = os.path.join(base_path, "paragraphs.txt")
     if os.path.exists(p_path):
         with open(p_path, "r", encoding="utf-8") as f:
@@ -129,7 +137,7 @@ def get_audio(read_id, category, index, text):
         except:
             return None
 
-# --- 第一層：首頁頂部極簡控制台 ---
+# --- 主交互渲染層 ---
 st.title("菁英朗讀訓練機")
 
 selected_reading = st.selectbox(
@@ -161,10 +169,9 @@ st.divider()
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
-    # --- 第二層：多維核心訓練艙（手機版全面自適應 Tab 容器） ---
     tabs = st.tabs(["🎴 生詞詞卡", "📏 重要單句", "📄 段落練習"])
 
-    # --- Tab 1: 生詞詞卡（手機單手操作最佳化佈局） ---
+    # --- Tab 1: 生詞詞卡（極簡優雅、純前端零延遲秒播） ---
     with tabs[0]:
         w_idx = st.session_state[f'w_idx_{reading_id}']
         w_flip = st.session_state[f'w_flip_{reading_id}']
@@ -172,45 +179,39 @@ else:
         curr_w = word_list[w_idx]
         display = translation_map[curr_w] if w_flip else curr_w
         
-        # 渲染大詞卡
-        st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
+        # 預先讀取當前生詞的音訊，準備注入 HTML
+        audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
+        b64_audio = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else ""
         
-        # 🚀 行動端黃金指配：核心發音大按鈕，單獨佔據第一排，解決高頻連續點擊
-        st.markdown('<div class="play-btn-container">', unsafe_allow_html=True)
-        if st.button("🔊 播放生詞發音", key=f"play_w_{reading_id}"):
-            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes:
-                # 注入 Base64 隱含純前端 JavaScript 零延遲秒播，支援連續多次快速點擊
-                b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
-                audio_tag = f"""
-                <audio id="mobile-word-audio" autoplay class="hidden-audio">
-                    <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
-                </audio>
-                <script>
-                    var audio = document.getElementById('mobile-word-audio');
-                    audio.currentTime = 0;
-                    audio.play();
-                </script>
-                """
-                st.markdown(audio_tag, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 將「🔊發音圖示」直接整合進詞卡 HTML 內。點擊右下角喇叭，純前端立刻發聲，隨按隨發，絕不重繪頁面！
+        card_html = f"""
+        <div class="word-card-container">
+            <h2 style="margin: 0; font-size: 1.8rem; font-weight: 600;">{display}</h2>
+            <p style="color:gray; margin: 10px 0 0 0; font-size: 0.9rem;">{w_idx+1} / {len(word_list)}</p>
+            <div class="native-play-icon" onclick="document.getElementById('native-card-audio').currentTime=0; document.getElementById('native-card-audio').play();">🔊</div>
+            <audio id="native-card-audio" style="display:none;">
+                <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+            </audio>
+        </div>
+        """
+        st.markdown(card_html, unsafe_allow_html=True)
         
-        # 輔助控制按鈕：拆分為手機單手大拇指左右兩側熱區，2x2 矩陣排布
-        c1, c2 = st.columns(2)
-        if c1.button("⬅️ 上一個生詞", key=f"prev_w_{reading_id}"):
-            st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
-            st.session_state[f'w_flip_{reading_id}'] = False
-            st.rerun()
-        if c2.button("➡️ 下一個生詞", key=f"next_w_{reading_id}"):
+        # 控制按鈕一律採取單列縱向平鋪（專業、高效、手機完美適配不變形）
+        if st.button("➡️ 下一個生詞", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
             st.rerun()
             
-        c3, c4 = st.columns(2)
-        if c3.button("🔄 翻轉卡片 / 中文", key=f"flip_w_{reading_id}"):
+        if st.button("🔄 翻轉卡片 / 檢視中文", key=f"flip_w_{reading_id}"):
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
-        if c4.button("🔀 隨機亂序", key=f"shuffle_w_{reading_id}"):
+            
+        if st.button("⬅️ 上一個生詞", key=f"prev_w_{reading_id}"):
+            st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
+            st.session_state[f'w_flip_{reading_id}'] = False
+            st.rerun()
+            
+        if st.button("🔀 隨機亂序排序", key=f"shuffle_w_{reading_id}"):
             random.shuffle(st.session_state[f'word_list_{reading_id}'])
             st.session_state[f'w_idx_{reading_id}'] = 0
             st.rerun()
@@ -225,14 +226,13 @@ else:
                 if st.session_state.get(f"s_cn_{reading_id}_{i}", False):
                     st.markdown(f'<div class="cn-text-box">{sent_trans[i] if i < len(sent_trans) else "（翻譯內容更新中）"}</div>', unsafe_allow_html=True)
                 
-                # 移動端寬度優化：改為垂直堆疊或 1:1 等寬列，適應窄螢幕
-                cc1, cc2 = st.columns(2)
-                if cc1.button("🔍 顯示/隱藏翻譯", key=f"show_s_cn_{reading_id}_{i}"):
-                    st.session_state[f"s_cn_{reading_id}_{i}"] = not st.session_state.get(f"s_cn_{reading_id}_{i}", False)
-                    st.rerun()
-                if cc2.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
+                if st.button("🔊 播放單句音訊", key=f"play_s_{reading_id}_{i}"):
                     audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
                     if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+                    
+                if st.button("🔍 顯示 / 隱藏中文翻譯", key=f"show_s_cn_{reading_id}_{i}"):
+                    st.session_state[f"s_cn_{reading_id}_{i}"] = not st.session_state.get(f"s_cn_{reading_id}_{i}", False)
+                    st.rerun()
                 
                 st.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
@@ -245,9 +245,8 @@ else:
                 st.write(p)
                 st.divider()
                 
-                # 手機直向視口排版最佳化
-                ccc1, cc2 = st.columns([1, 1])
-                if ccc1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
+                if st.button("🔊 播放全段音訊", key=f"play_p_{reading_id}_{i}"):
                     audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                     if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+                    
                 st.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
