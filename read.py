@@ -4,8 +4,6 @@ import random
 import os
 from gtts import gTTS
 import io
-import base64
-import time
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
@@ -104,6 +102,7 @@ def get_audio(read_id, category, index, text):
     """
     優先自 assets/audio/ 尋找本機高音質預錄音檔，主動針對段落練習實施雙位數補零（01, 02）尋址轉換。
     """
+    # 🟢 核心修正：若類別為段落，將檔名格式化為雙位數補零（如 para_01.mp3）
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
     else:
@@ -123,7 +122,7 @@ def get_audio(read_id, category, index, text):
         except:
             return None
 
-# --- 第一層：首頁頂部控制台 ---
+# --- 第一層：首頁頂部極簡控制台 ---
 st.title("菁英朗讀訓練機")
 
 selected_reading = st.selectbox(
@@ -154,7 +153,7 @@ word_list = st.session_state[f'word_list_{reading_id}']
 
 st.divider()
 
-# --- 數據完整性檢查 ---
+# --- 數據完整性熔斷檢查 ---
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
@@ -178,20 +177,11 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = False
             st.rerun()
             
-        # 🔊 生詞發音：在 Base64 字串後方加上動態時間戳記參數（#t=timestamp）
-        # 強制穿透瀏覽器的快取鎖定屏障，完美解決按第二次沒聲音的問題，同時外觀 100% 保持經典原樣
+        # 生詞發音（若未來音檔也要補零，可在 get_audio 內比照處理）
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
             audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
             if audio_bytes: 
-                b64_str = base64.b64encode(audio_bytes).decode("utf-8")
-                # 使用時間戳記生成動態網址，欺騙瀏覽器，完成無限次重複發聲
-                nonce_url = f"data:audio/mp3;base64,{b64_str}#t={time.time()}"
-                audio_tag = f"""
-                <audio autoplay="true" style="display:none;">
-                    <source src="{nonce_url}" type="audio/mp3">
-                </audio>
-                """
-                st.markdown(audio_tag, unsafe_allow_html=True)
+                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
@@ -207,7 +197,7 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-    # --- Tab 2: 單句朗讀訓練（原封不動） ---
+    # --- Tab 2: 單句朗讀訓練 ---
     with tabs[1]:
         st.subheader("單句朗讀訓練")
         for i, s in enumerate(sents):
@@ -228,13 +218,14 @@ else:
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
 
-    # --- Tab 3: 段落練習（原封不動） ---
+    # --- Tab 3: 段落練習 ---
     with tabs[2]:
         st.subheader("段落練習")
         for i, p in enumerate(paragraphs_list):
             with st.expander(f"第 {i+1} 段", expanded=True):
                 st.write(p)
                 c1, c2 = st.columns([1, 2])
+                # 🔊 播放段落：傳入 i+1，內部將完美轉成 01, 02... 檔名對齊本機真實檔案
                 if c1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
                     audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                     if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
