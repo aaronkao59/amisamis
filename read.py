@@ -100,9 +100,16 @@ def load_reading_text(read_id):
 # --- 智慧音訊路由器 ---
 def get_audio(read_id, category, index, text):
     """
-    優先自 assets/audio/ 尋找本機高音質預錄音檔，若無則啟動 gTTS 線上防禦性增補。
+    優先自 assets/audio/ 尋找本機高音質預錄音檔，主動針對段落練習實施雙位數補零（01, 02）尋址轉換。
     """
-    file_path = f"assets/audio/readings_{read_id}/{category}/{category[:-1]}_{index}.mp3"
+    # 🟢 核心修正：若類別為段落，將檔名格式化為雙位數補零（如 para_01.mp3）
+    if category == "paragraphs":
+        file_name = f"para_{index:02d}.mp3"
+    else:
+        file_name = f"{category[:-1]}_{index}.mp3"
+        
+    file_path = f"assets/audio/readings_{read_id}/{category}/{file_name}"
+    
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             return f.read()
@@ -150,7 +157,7 @@ st.divider()
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
-    # --- 第二層：多維核心訓練艙（如截圖所示之三模組結構） ---
+    # --- 第二層：多維核心訓練艙 ---
     tabs = st.tabs(["🎴 生詞詞卡", "📏 單句朗讀訓練", "📄 段落練習"])
 
     # --- Tab 1: 生詞詞卡 ---
@@ -170,9 +177,9 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = False
             st.rerun()
             
-        # 🟢 修正點：點擊「🔊 發音」圖示按鈕直接觸發音訊，介面不留痕跡
+        # 生詞發音（若未來音檔也要補零，可在 get_audio 內比照處理）
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-            audio_bytes = get_audio(reading_id, "words", w_idx, curr_w)
+            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
             if audio_bytes: 
                 st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 
@@ -206,7 +213,7 @@ else:
                     
                 c1, c2 = st.columns([1, 2])
                 if c1.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
-                    audio_bytes = get_audio(reading_id, "sentences", i, s)
+                    audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
                     if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
@@ -218,7 +225,8 @@ else:
             with st.expander(f"第 {i+1} 段", expanded=True):
                 st.write(p)
                 c1, c2 = st.columns([1, 2])
+                # 🔊 播放段落：傳入 i+1，內部將完美轉成 01, 02... 檔名對齊本機真實檔案
                 if c1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
-                    audio_bytes = get_audio(reading_id, "paragraphs", i, p)
+                    audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                     if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
