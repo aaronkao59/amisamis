@@ -4,20 +4,20 @@ import random
 import os
 from gtts import gTTS
 import io
-import time
 
 # --- 頁面配置 ---
-st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 樣式控制層 ---
+# --- 核心 CSS 更新 ---
 st.markdown("""
 <style>
-    /* 詞卡樣式：主動適應深淺色主題變數 */
+    /* 詞卡：使用系統背景色變數 */
     .word-card {
         border: 2px solid #4CAF50;
         border-radius: 15px;
         padding: 30px 10px;
         text-align: center;
+        /* 使用 Streamlit 內建變數：自動隨主題切換背景與文字顏色 */
         background-color: var(--secondary-bg-color); 
         color: var(--text-color);
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -29,7 +29,7 @@ st.markdown("""
         justify-content: center;
     }
     
-    /* 按鈕全局控頻：確保觸控精準度與回饋 */
+    /* 按鈕樣式：確保文字垂直居中與觸控友善 */
     .stButton > button {
         width: 100%;
         padding: 0.5rem 0.2rem !important;
@@ -37,9 +37,10 @@ st.markdown("""
         border-radius: 8px;
     }
 
-    /* 中文翻譯對照框 */
+    /* 中文翻譯框：使用帶有透明度的綠色，確保在深淺色背景下都能閱讀 */
     .cn-text-box {
         color: var(--text-color);
+        /* 使用 rgba 確保背景色在深色模式下不會太刺眼 */
         background-color: rgba(76, 175, 80, 0.15); 
         padding: 15px;
         border-radius: 10px;
@@ -49,7 +50,7 @@ st.markdown("""
         font-size: 0.95rem;
     }
 
-    /* 原文流動資訊框 */
+    /* 確保阿美語原文在深色模式下依然清晰 */
     .stInfo {
         background-color: rgba(30, 144, 255, 0.1) !important;
         color: var(--text-color) !important;
@@ -59,9 +60,6 @@ st.markdown("""
 
 # --- 數據動態加載模組 (I/O 路由解耦) ---
 def load_reading_text(read_id):
-    """
-    自 assets/text/ 靜態結構中秒讀目標文本，若檔案缺失則優雅降級回傳空結構以防白屏。
-    """
     base_path = f"assets/text/reading_{read_id}"
     data = {"translation_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
     
@@ -100,9 +98,6 @@ def load_reading_text(read_id):
 
 # --- 智慧音訊路由器 ---
 def get_audio(read_id, category, index, text):
-    """
-    優先自 assets/audio/ 尋找本機高音質預錄音檔，主動針對段落練習實施雙位數補零（01, 02）尋址轉換。
-    """
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
     else:
@@ -148,19 +143,17 @@ if f'w_idx_{reading_id}' not in st.session_state:
     st.session_state[f'w_idx_{reading_id}'] = 0
 if f'w_flip_{reading_id}' not in st.session_state: 
     st.session_state[f'w_flip_{reading_id}'] = False
+if f'w_audio_counter_{reading_id}' not in st.session_state:
+    st.session_state[f'w_audio_counter_{reading_id}'] = 0
 
 word_list = st.session_state[f'word_list_{reading_id}']
 
 st.divider()
 
-# --- 數據完整性熔斷檢查 ---
+# --- 數據完整性檢查 ---
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
-    # 🟢 獨立宣告生詞專用隱形音訊插槽，保持原介面 100% 乾淨不卡頓
-    word_audio_slot = st.empty()
-
-    # --- 第二層：多維核心訓練艙 ---
     tabs = st.tabs(["🎴 生詞詞卡", "📏 單句朗讀訓練", "📄 段落練習"])
 
     # --- Tab 1: 生詞詞卡 ---
@@ -173,6 +166,9 @@ else:
         
         st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
         
+        # 🟢 在按鈕上方固定宣告發音容器，確保每次更新都是安全且固定的元件樹結構
+        word_audio_container = st.container()
+
         cols = st.columns([1, 1, 1, 1, 1.2]) 
         
         if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
@@ -180,12 +176,10 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = False
             st.rerun()
             
-        # 🔊 生詞發音：引入動態時間戳記安全艙，完美支援不限次數、連續點擊發聲
+        # 🔊 生詞發音：遞增計數器，完全採用安全的整數變數，實現重複流暢播放
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes: 
-                word_audio_slot.audio(audio_bytes, format="audio/mp3", autoplay=True, key=f"src_w_{time.time()}")
-                
+            st.session_state[f'w_audio_counter_{reading_id}'] += 1
+            
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
@@ -200,7 +194,14 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-    # --- Tab 2: 單句朗讀訓練 ---
+        # 🟢 當計數器被觸發時，將資料安全地送入容器軌道中播放，完全避免生命週期錯位
+        audio_count = st.session_state[f'w_audio_counter_{reading_id}']
+        if audio_count > 0:
+            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
+            if audio_bytes:
+                word_audio_container.audio(audio_bytes, format="audio/mp3", autoplay=True, key=f"safe_w_track_{reading_id}_{w_idx}_{audio_count}")
+
+    # --- Tab 2: 單句朗讀訓練 (完全維持最初要求之樣式結構) ---
     with tabs[1]:
         st.subheader("單句朗讀訓練")
         for i, s in enumerate(sents):
@@ -221,14 +222,13 @@ else:
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
 
-    # --- Tab 3: 段落練習（完全維持原始狀態，未做任何更動） ---
+    # --- Tab 3: 段落練習 (完全維持最初要求之樣式結構) ---
     with tabs[2]:
         st.subheader("段落練習")
         for i, p in enumerate(paragraphs_list):
             with st.expander(f"第 {i+1} 段", expanded=True):
                 st.write(p)
                 c1, c2 = st.columns([1, 2])
-                # 🔊 播放段落：傳入 i+1，內部將完美轉成 01, 02... 檔名對齊本機真實檔案
                 if c1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
                     audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                     if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
