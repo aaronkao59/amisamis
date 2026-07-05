@@ -8,7 +8,7 @@ import io
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 更新 ---
+# --- 核心 CSS 更新（100% 維持您原本的精美視覺） ---
 st.markdown("""
 <style>
     /* 詞卡：使用系統背景色變數 */
@@ -144,6 +144,10 @@ if f'w_idx_{reading_id}' not in st.session_state:
 if f'w_flip_{reading_id}' not in st.session_state: 
     st.session_state[f'w_flip_{reading_id}'] = False
 
+# 專為生詞詞卡按鈕設計的獨立計數器變數
+if f'w_click_count_{reading_id}' not in st.session_state:
+    st.session_state[f'w_click_count_{reading_id}'] = 0
+
 word_list = st.session_state[f'word_list_{reading_id}']
 
 st.divider()
@@ -169,43 +173,33 @@ else:
         if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
-            # 切換詞卡時清除前一個詞的隨機狀態變數，維持乾淨的記憶體空間
-            if f'w_play_stream_{reading_id}' in st.session_state:
-                del st.session_state[f'w_play_stream_{reading_id}']
             st.rerun()
             
-        # 🔊 生詞發音：直接將音訊二進位數據包裝進一個隨機變數屬性內
-        # 如此一來，Streamlit 在每次點擊發音時都會向瀏覽器推播全新的數據流，徹底解除限制，同時外觀絕不變形
+        # 🔊 生詞發音：核心修復處。點擊時安全地遞增獨立計數器，並現場生成動態唯一 key。
+        # 拋棄一切外部暫存與刪除邏輯，維持代碼極致純淨，徹底解鎖流暢重複播放功能！
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
+            st.session_state[f'w_click_count_{reading_id}'] += 1
             audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes:
-                st.session_state[f'w_play_stream_{reading_id}'] = audio_bytes
+            if audio_bytes: 
+                # 建立完全解耦、不衝突的隨機安全 Key，穿透快取
+                click_id = st.session_state[f'w_click_count_{reading_id}']
+                st.audio(audio_bytes, format="audio/mp3", autoplay=True, key=f"word_audio_engine_{reading_id}_{w_idx}_{click_id}")
                 
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
-            if f'w_play_stream_{reading_id}' in st.session_state:
-                del st.session_state[f'w_play_stream_{reading_id}']
             st.rerun()
             
         if cols[3].button("🔀 隨機", key=f"shuffle_w_{reading_id}"):
             random.shuffle(st.session_state[f'word_list_{reading_id}'])
             st.session_state[f'w_idx_{reading_id}'] = 0
-            if f'w_play_stream_{reading_id}' in st.session_state:
-                del st.session_state[f'w_play_stream_{reading_id}']
             st.rerun()
             
         if cols[4].button("🔄 翻轉/中文", key=f"flip_w_{reading_id}"):
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-        # 🟢 如果隨機發音狀態中有音訊，使用完全固定且唯一的靜態 key 渲染播放，絕不觸發任何類型語法錯誤
-        if f'w_play_stream_{reading_id}' in st.session_state:
-            st.audio(st.session_state[f'w_play_stream_{reading_id}'], format="audio/mp3", autoplay=True, key="play_card_word_audio")
-            # 播放完畢後抹除暫存旗標，利於下一次點按
-            del st.session_state[f'w_play_stream_{reading_id}']
-
-    # --- Tab 2: 單句朗讀訓練 (100% 恢復原本寫法與功能) ---
+    # --- Tab 2: 單句朗讀訓練 (完全維持原本寫法與功能) ---
     with tabs[1]:
         st.subheader("單句朗讀訓練")
         for i, s in enumerate(sents):
@@ -226,7 +220,7 @@ else:
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
 
-    # --- Tab 3: 段落練習 (100% 恢復原本寫法與功能) ---
+    # --- Tab 3: 段落練習 (完全維持原本寫法與功能) ---
     with tabs[2]:
         st.subheader("段落練習")
         for i, p in enumerate(paragraphs_list):
