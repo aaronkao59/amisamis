@@ -6,18 +6,17 @@ from gtts import gTTS
 import io
 
 # --- 頁面配置 ---
-st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 更新（100% 維持您原本的精美視覺） ---
+# --- 核心 CSS 樣式控制層 ---
 st.markdown("""
 <style>
-    /* 詞卡：使用系統背景色變數 */
+    /* 詞卡樣式：主動適應深淺色主題變數 */
     .word-card {
         border: 2px solid #4CAF50;
         border-radius: 15px;
         padding: 30px 10px;
         text-align: center;
-        /* 使用 Streamlit 內建變數：自動隨主題切換背景與文字顏色 */
         background-color: var(--secondary-bg-color); 
         color: var(--text-color);
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -29,7 +28,7 @@ st.markdown("""
         justify-content: center;
     }
     
-    /* 按鈕樣式：確保文字垂直居中與觸控友善 */
+    /* 按鈕全局控頻：確保觸控精準度與回饋 */
     .stButton > button {
         width: 100%;
         padding: 0.5rem 0.2rem !important;
@@ -37,10 +36,9 @@ st.markdown("""
         border-radius: 8px;
     }
 
-    /* 中文翻譯框：使用帶有透明度的綠色，確保在深淺色背景下都能閱讀 */
+    /* 中文翻譯對照框 */
     .cn-text-box {
         color: var(--text-color);
-        /* 使用 rgba 確保背景色在深色模式下不會太刺眼 */
         background-color: rgba(76, 175, 80, 0.15); 
         padding: 15px;
         border-radius: 10px;
@@ -50,7 +48,7 @@ st.markdown("""
         font-size: 0.95rem;
     }
 
-    /* 確保阿美語原文在深色模式下依然清晰 */
+    /* 原文流動資訊框 */
     .stInfo {
         background-color: rgba(30, 144, 255, 0.1) !important;
         color: var(--text-color) !important;
@@ -60,6 +58,9 @@ st.markdown("""
 
 # --- 數據動態加載模組 (I/O 路由解耦) ---
 def load_reading_text(read_id):
+    """
+    自 assets/text/ 靜態結構中秒讀目標文本，若檔案缺失則優雅降級回傳空結構以防白屏。
+    """
     base_path = f"assets/text/reading_{read_id}"
     data = {"translation_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
     
@@ -98,6 +99,9 @@ def load_reading_text(read_id):
 
 # --- 智慧音訊路由器 ---
 def get_audio(read_id, category, index, text):
+    """
+    優先自 assets/audio/ 尋找本機高音質預錄音檔，主動針對段落練習實施雙位數補零（01, 02）尋址轉換。
+    """
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
     else:
@@ -117,8 +121,8 @@ def get_audio(read_id, category, index, text):
         except:
             return None
 
-# --- 第一層：首頁控制層 ---
-st.title("菁英朗讀訓練機")
+# --- 第一層：首頁頂部極簡控制台 ---
+st.title("菁英朗送訓練機")
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
@@ -144,9 +148,11 @@ if f'w_idx_{reading_id}' not in st.session_state:
 if f'w_flip_{reading_id}' not in st.session_state: 
     st.session_state[f'w_flip_{reading_id}'] = False
 
-# 專為生詞詞卡按鈕設計的獨立計數器變數
-if f'w_click_count_{reading_id}' not in st.session_state:
-    st.session_state[f'w_click_count_{reading_id}'] = 0
+# 專為生詞連續點擊設計的獨立安全計數器
+if f'w_audio_nonce_{reading_id}' not in st.session_state:
+    st.session_state[f'w_audio_nonce_{reading_id}'] = 0
+if f'w_audio_cache_{reading_id}' not in st.session_state:
+    st.session_state[f'w_audio_cache_{reading_id}'] = None
 
 word_list = st.session_state[f'word_list_{reading_id}']
 
@@ -156,6 +162,7 @@ st.divider()
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
+    # --- 第二層：多維核心訓練艙 ---
     tabs = st.tabs(["🎴 生詞詞卡", "📏 單句朗讀訓練", "📄 段落練習"])
 
     # --- Tab 1: 生詞詞卡 ---
@@ -173,33 +180,44 @@ else:
         if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
+            st.session_state[f'w_audio_cache_{reading_id}'] = None # 切換單字時主動釋放音軌
             st.rerun()
             
-        # 🔊 生詞發音：核心修復處。點擊時安全地遞增獨立計數器，並現場生成動態唯一 key。
-        # 拋棄一切外部暫存與刪除邏輯，維持代碼極致純淨，徹底解鎖流暢重複播放功能！
+        # 🔊 發音按鈕修正：點擊時快取音訊二進位流，並安全遞增計數器，現場不呼叫音訊組件以防生命週期錯位
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-            st.session_state[f'w_click_count_{reading_id}'] += 1
             audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes: 
-                # 建立完全解耦、不衝突的隨機安全 Key，穿透快取
-                click_id = st.session_state[f'w_click_count_{reading_id}']
-                st.audio(audio_bytes, format="audio/mp3", autoplay=True, key=f"word_audio_engine_{reading_id}_{w_idx}_{click_id}")
+            if audio_bytes:
+                st.session_state[f'w_audio_cache_{reading_id}'] = audio_bytes
+                st.session_state[f'w_audio_nonce_{reading_id}'] += 1
+                st.rerun()
                 
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
+            st.session_state[f'w_audio_cache_{reading_id}'] = None
             st.rerun()
             
         if cols[3].button("🔀 隨機", key=f"shuffle_w_{reading_id}"):
             random.shuffle(st.session_state[f'word_list_{reading_id}'])
             st.session_state[f'w_idx_{reading_id}'] = 0
+            st.session_state[f'w_audio_cache_{reading_id}'] = None
             st.rerun()
             
         if cols[4].button("🔄 翻轉/中文", key=f"flip_w_{reading_id}"):
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-    # --- Tab 2: 單句朗讀訓練 (完全維持原本寫法與功能) ---
+        # 🟢 終極流暢發聲安全艙：常駐於分頁底部，利用完全不含巢狀單引號的乾淨變數解鎖快取鎖定，實現無限次數秒撥
+        current_nonce = st.session_state[f'w_audio_nonce_{reading_id}']
+        if st.session_state[f'w_audio_cache_{reading_id}'] is not None:
+            st.audio(
+                st.session_state[f'w_audio_cache_{reading_id}'], 
+                format="audio/mp3", 
+                autoplay=True, 
+                key=f"static_w_player_{reading_id}_{current_nonce}"
+            )
+
+    # --- Tab 2: 單句朗讀訓練（與原版完全一致） ---
     with tabs[1]:
         st.subheader("單句朗讀訓練")
         for i, s in enumerate(sents):
@@ -220,7 +238,7 @@ else:
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
 
-    # --- Tab 3: 段落練習 (完全維持原本寫法與功能) ---
+    # --- Tab 3: 段落練習（與原版完全一致） ---
     with tabs[2]:
         st.subheader("段落練習")
         for i, p in enumerate(paragraphs_list):
