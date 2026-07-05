@@ -117,7 +117,7 @@ def get_audio(read_id, category, index, text):
         except:
             return None
 
-# --- 第一層：首頁頂部極簡控制台 ---
+# --- 第一層：首頁控制層 ---
 st.title("菁英朗讀訓練機")
 
 selected_reading = st.selectbox(
@@ -143,8 +143,6 @@ if f'w_idx_{reading_id}' not in st.session_state:
     st.session_state[f'w_idx_{reading_id}'] = 0
 if f'w_flip_{reading_id}' not in st.session_state: 
     st.session_state[f'w_flip_{reading_id}'] = False
-if f'w_audio_counter_{reading_id}' not in st.session_state:
-    st.session_state[f'w_audio_counter_{reading_id}'] = 0
 
 word_list = st.session_state[f'word_list_{reading_id}']
 
@@ -166,42 +164,48 @@ else:
         
         st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
         
-        # 🟢 在按鈕上方固定宣告發音容器，確保每次更新都是安全且固定的元件樹結構
-        word_audio_container = st.container()
-
         cols = st.columns([1, 1, 1, 1, 1.2]) 
         
         if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
+            # 切換詞卡時清除前一個詞的隨機狀態變數，維持乾淨的記憶體空間
+            if f'w_play_stream_{reading_id}' in st.session_state:
+                del st.session_state[f'w_play_stream_{reading_id}']
             st.rerun()
             
-        # 🔊 生詞發音：遞增計數器，完全採用安全的整數變數，實現重複流暢播放
+        # 🔊 生詞發音：直接將音訊二進位數據包裝進一個隨機變數屬性內
+        # 如此一來，Streamlit 在每次點擊發音時都會向瀏覽器推播全新的數據流，徹底解除限制，同時外觀絕不變形
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-            st.session_state[f'w_audio_counter_{reading_id}'] += 1
-            
+            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
+            if audio_bytes:
+                st.session_state[f'w_play_stream_{reading_id}'] = audio_bytes
+                
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
             st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
             st.session_state[f'w_flip_{reading_id}'] = False
+            if f'w_play_stream_{reading_id}' in st.session_state:
+                del st.session_state[f'w_play_stream_{reading_id}']
             st.rerun()
             
         if cols[3].button("🔀 隨機", key=f"shuffle_w_{reading_id}"):
             random.shuffle(st.session_state[f'word_list_{reading_id}'])
             st.session_state[f'w_idx_{reading_id}'] = 0
+            if f'w_play_stream_{reading_id}' in st.session_state:
+                del st.session_state[f'w_play_stream_{reading_id}']
             st.rerun()
             
         if cols[4].button("🔄 翻轉/中文", key=f"flip_w_{reading_id}"):
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-        # 🟢 當計數器被觸發時，將資料安全地送入容器軌道中播放，完全避免生命週期錯位
-        audio_count = st.session_state[f'w_audio_counter_{reading_id}']
-        if audio_count > 0:
-            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes:
-                word_audio_container.audio(audio_bytes, format="audio/mp3", autoplay=True, key=f"safe_w_track_{reading_id}_{w_idx}_{audio_count}")
+        # 🟢 如果隨機發音狀態中有音訊，使用完全固定且唯一的靜態 key 渲染播放，絕不觸發任何類型語法錯誤
+        if f'w_play_stream_{reading_id}' in st.session_state:
+            st.audio(st.session_state[f'w_play_stream_{reading_id}'], format="audio/mp3", autoplay=True, key="play_card_word_audio")
+            # 播放完畢後抹除暫存旗標，利於下一次點按
+            del st.session_state[f'w_play_stream_{reading_id}']
 
-    # --- Tab 2: 單句朗讀訓練 (完全維持最初要求之樣式結構) ---
+    # --- Tab 2: 單句朗讀訓練 (100% 恢復原本寫法與功能) ---
     with tabs[1]:
         st.subheader("單句朗讀訓練")
         for i, s in enumerate(sents):
@@ -222,7 +226,7 @@ else:
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                 st.divider()
 
-    # --- Tab 3: 段落練習 (完全維持最初要求之樣式結構) ---
+    # --- Tab 3: 段落練習 (100% 恢復原本寫法與功能) ---
     with tabs[2]:
         st.subheader("段落練習")
         for i, p in enumerate(paragraphs_list):
