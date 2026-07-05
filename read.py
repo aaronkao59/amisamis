@@ -4,12 +4,11 @@ import random
 import os
 from gtts import gTTS
 import io
-import time
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 樣式控制層 ---
+# --- 核心 CSS 樣式控制層（完全保留您喜愛的最簡潔外觀） ---
 st.markdown("""
 <style>
     /* 詞卡樣式：主動適應深淺色主題變數 */
@@ -29,7 +28,7 @@ st.markdown("""
         justify-content: center;
     }
     
-    /* 按鈕全局控頻：確保觸控精準度與回饋 */
+    /* 按鈕全域控頻：確保觸控精準度與回饋，手機友善 */
     .stButton > button {
         width: 100%;
         padding: 0.5rem 0.2rem !important;
@@ -100,9 +99,6 @@ def load_reading_text(read_id):
 
 # --- 智慧音訊路由器 ---
 def get_audio(read_id, category, index, text):
-    """
-    優先自 assets/audio/ 尋找本機高音質預錄音檔，主動針對段落練習實施雙位數補零（01, 02）尋址轉換。
-    """
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
     else:
@@ -148,7 +144,8 @@ if f'w_idx_{reading_id}' not in st.session_state:
     st.session_state[f'w_idx_{reading_id}'] = 0
 if f'w_flip_{reading_id}' not in st.session_state: 
     st.session_state[f'w_flip_{reading_id}'] = False
-# 🟢 引入滾動計數器，用於在發音按鈕被點擊時，強行刷新底層播放組件的快取鎖
+
+# 滾動隨機計數器
 if f'audio_trigger_{reading_id}' not in st.session_state:
     st.session_state[f'audio_trigger_{reading_id}'] = 0
 
@@ -156,11 +153,11 @@ word_list = st.session_state[f'word_list_{reading_id}']
 
 st.divider()
 
-# --- 數據完整性熔斷檢查 ---
+# --- 數據完整性檢查 ---
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
-    # --- 第二層：多維核心訓練艙 ---
+    # --- 第二層：多維核心訓練艙（保持 100% 經典完美外觀） ---
     tabs = st.tabs(["🎴 生詞詞卡", "📏 單句朗讀訓練", "📄 段落練習"])
 
     # --- Tab 1: 生詞詞卡 ---
@@ -180,9 +177,8 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = False
             st.rerun()
             
-        # 🔊 生詞發音按鈕
+        # 🔊 生詞發音按鈕：點擊時安全地累加計數器
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-            # 點擊時遞增觸發器值，強行迫使網頁重新載入音訊流
             st.session_state[f'audio_trigger_{reading_id}'] += 1
             
         if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
@@ -199,16 +195,16 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = not w_flip
             st.rerun()
 
-        # 🟢 核心解鎖補丁：當觸報值大於 0 時，動態載入帶有隨機滾動 Key 的音訊流實體
-        # 由於 Key 每次都不同，瀏覽器快取會被強行穿透，實現隨時重複點擊、無限次數發聲
-        if st.session_state[f'audio_trigger_{reading_id}'] > 0:
+        # 🟢 修正點：提早提取乾淨的字串變數，完美繞過巢狀引號語法錯誤，實現無限連續發聲
+        current_trigger = st.session_state[f'audio_trigger_{reading_id}']
+        if current_trigger > 0:
             audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
             if audio_bytes:
                 st.audio(
                     audio_bytes, 
                     format="audio/mp3", 
                     autoplay=True, 
-                    key=f"audio_instance_{reading_id}_{w_idx}_{st.session_state[f'audio_trigger_{reading_id}']}"
+                    key=f"audio_w_{reading_id}_{w_idx}_{current_trigger}"
                 )
 
     # --- Tab 2: 單句朗讀訓練 ---
@@ -227,18 +223,19 @@ else:
                     
                 c1, c2 = st.columns([1, 2])
                 
-                # 同步為重要單句部分的發音按鈕注入無限次發聲結構
                 if c1.button("🔊 播放句子", key=f"btn_s_{reading_id}_{i}"):
                     st.session_state[f"s_audio_trig_{reading_id}_{i}"] = st.session_state.get(f"s_audio_trig_{reading_id}_{i}", 0) + 1
                 
-                if st.session_state.get(f"s_audio_trig_{reading_id}_{i}", 0) > 0:
+                # 安全讀取句子計數器
+                current_s_trigger = st.session_state.get(f"s_audio_trig_{reading_id}_{i}", 0)
+                if current_s_trigger > 0:
                     audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
                     if audio_bytes:
                         st.audio(
                             audio_bytes, 
                             format="audio/mp3", 
                             autoplay=True,
-                            key=f"audio_s_{reading_id}_{i}_{st.session_state[f's_audio_trig_{reading_id}_{i}']}"
+                            key=f"audio_s_{reading_id}_{i}_{current_s_trigger}"
                         )
                         
                 c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
@@ -252,18 +249,19 @@ else:
                 st.write(p)
                 c1, c2 = st.columns([1, 2])
                 
-                # 同步為段落練習部分的發音按鈕注入無限次發聲結構
                 if c1.button("🔊 播放全段", key=f"btn_p_{reading_id}_{i}"):
                     st.session_state[f"p_audio_trig_{reading_id}_{i}"] = st.session_state.get(f"p_audio_trig_{reading_id}_{i}", 0) + 1
                     
-                if st.session_state.get(f"p_audio_trig_{reading_id}_{i}", 0) > 0:
+                # 安全讀取段落計數器
+                current_p_trigger = st.session_state.get(f"p_audio_trig_{reading_id}_{i}", 0)
+                if current_p_trigger > 0:
                     audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                     if audio_bytes:
                         st.audio(
                             audio_bytes, 
                             format="audio/mp3", 
                             autoplay=True,
-                            key=f"audio_p_{reading_id}_{i}_{st.session_state[f'p_audio_trig_{reading_id}_{i}']}"
+                            key=f"audio_p_{reading_id}_{i}_{current_p_trigger}"
                         )
                         
                 c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
