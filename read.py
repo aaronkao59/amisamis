@@ -6,7 +6,7 @@ from gtts import gTTS
 import io
 
 # --- 頁面配置 ---
-st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
 # --- 核心 CSS 樣式控制層 ---
 st.markdown("""
@@ -123,7 +123,7 @@ def get_audio(read_id, category, index, text):
             return None
 
 # --- 第一層：首頁頂部極簡控制台 ---
-st.title("菁英朗讀訓練機")
+st.title("朗讀訓練機")
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
@@ -158,7 +158,7 @@ if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
     # --- 第二層：多維核心訓練艙 ---
-    tabs = st.tabs(["🎴 生詞詞卡", "📏 單句朗讀訓練", "📄 段落練習"])
+    tabs = st.tabs(["🎴 生詞詞卡", "📏 重要單句", "📄 段落練習"])
 
     # --- Tab 1: 生詞詞卡 ---
     with tabs[0]:
@@ -199,7 +199,7 @@ else:
 
     # --- Tab 2: 單句朗讀訓練 ---
     with tabs[1]:
-        st.subheader("單句朗讀訓練")
+        st.subheader("重要單句")
         for i, s in enumerate(sents):
             with st.container():
                 st.info(s)
