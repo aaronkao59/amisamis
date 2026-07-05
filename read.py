@@ -5,6 +5,7 @@ import os
 from gtts import gTTS
 import io
 import base64
+import time
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="菁英朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
@@ -122,7 +123,7 @@ def get_audio(read_id, category, index, text):
         except:
             return None
 
-# --- 第一層：首頁頂部極簡控制台 ---
+# --- 第一層：首頁頂部控制台 ---
 st.title("菁英朗讀訓練機")
 
 selected_reading = st.selectbox(
@@ -153,7 +154,7 @@ word_list = st.session_state[f'word_list_{reading_id}']
 
 st.divider()
 
-# --- 數據完整性熔斷檢查 ---
+# --- 數據完整性檢查 ---
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
@@ -177,15 +178,17 @@ else:
             st.session_state[f'w_flip_{reading_id}'] = False
             st.rerun()
             
-        # 🔊 生詞發音修正：改採純前端 HTML5 隱形音軌繞過 Streamlit 生命週期限制。
-        # 外觀、排版完全不動，但可完美支援持續、不卡頓的快有點擊播放！
+        # 🔊 生詞發音：在 Base64 字串後方加上動態時間戳記參數（#t=timestamp）
+        # 強制穿透瀏覽器的快取鎖定屏障，完美解決按第二次沒聲音的問題，同時外觀 100% 保持經典原樣
         if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
             audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
             if audio_bytes: 
                 b64_str = base64.b64encode(audio_bytes).decode("utf-8")
+                # 使用時間戳記生成動態網址，欺騙瀏覽器，完成無限次重複發聲
+                nonce_url = f"data:audio/mp3;base64,{b64_str}#t={time.time()}"
                 audio_tag = f"""
                 <audio autoplay="true" style="display:none;">
-                    <source src="data:audio/mp3;base64,{b64_str}" type="audio/mp3">
+                    <source src="{nonce_url}" type="audio/mp3">
                 </audio>
                 """
                 st.markdown(audio_tag, unsafe_allow_html=True)
