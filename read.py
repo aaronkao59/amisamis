@@ -204,7 +204,7 @@ else:
             font_scale = st.slider("📏 調整段落字體大小", min_value=1.0, max_value=3.0, value=1.2, step=0.1, key=f"font_slider_{reading_id}", label_visibility="collapsed")
             
         for i, p in enumerate(paragraphs_list):
-            with st.expander(f"第 {i+1} 段", expanded=True):
+            with st.expander(f"第 {i+1} 段", expanded=False):
                 st.markdown(f'<div style="font-size: {font_scale}rem; line-height: 1.8; padding: 10px 0;">{p}</div>', unsafe_allow_html=True)
                 
                 c1, c2 = st.columns([1, 2])
