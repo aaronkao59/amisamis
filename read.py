@@ -139,76 +139,77 @@ st.divider()
 if not word_list or not paragraphs_list:
     st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
 else:
-    tabs = st.tabs(["🎴 生詞詞卡", "📏 重要單句", "📄 段落練習"])
+    with st.expander("📖 展開訓練內容", expanded=False):
+        tabs = st.tabs(["🎴 生詞詞卡", "📏 重要單句", "📄 段落練習"])
 
-    with tabs[0]:
-        w_idx = st.session_state[f'w_idx_{reading_id}']
-        w_flip = st.session_state[f'w_flip_{reading_id}']
-        
-        curr_w = word_list[w_idx]
-        display = translation_map[curr_w] if w_flip else curr_w
-        
-        st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
-        
-        cols = st.columns([1, 1, 1, 1, 1.2]) 
-        
-        if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
-            st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
-            st.session_state[f'w_flip_{reading_id}'] = False
-            st.rerun()
+        with tabs[0]:
+            w_idx = st.session_state[f'w_idx_{reading_id}']
+            w_flip = st.session_state[f'w_flip_{reading_id}']
             
-        if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-            audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
-            if audio_bytes: 
-                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                
-        if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
-            st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
-            st.session_state[f'w_flip_{reading_id}'] = False
-            st.rerun()
+            curr_w = word_list[w_idx]
+            display = translation_map[curr_w] if w_flip else curr_w
             
-        if cols[3].button("🔀 隨機", key=f"shuffle_w_{reading_id}"):
-            random.shuffle(st.session_state[f'word_list_{reading_id}'])
-            st.session_state[f'w_idx_{reading_id}'] = 0
-            st.rerun()
+            st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
             
-        if cols[4].button("🔄 翻轉/中文", key=f"flip_w_{reading_id}"):
-            st.session_state[f'w_flip_{reading_id}'] = not w_flip
-            st.rerun()
-
-    with tabs[1]:
-        st.subheader("重要單句")
-        for i, s in enumerate(sents):
-            with st.container():
-                st.info(s)
+            cols = st.columns([1, 1, 1, 1, 1.2]) 
+            
+            if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
+                st.session_state[f'w_idx_{reading_id}'] = (w_idx - 1) % len(word_list)
+                st.session_state[f'w_flip_{reading_id}'] = False
+                st.rerun()
                 
-                if st.session_state.get(f"s_cn_{reading_id}_{i}", False):
-                    st.markdown(f'<div class="cn-text-box">{sent_trans[i] if i < len(sent_trans) else "（翻譯內容更新中）"}</div>', unsafe_allow_html=True)
-                
-                if st.button("顯示/隱藏中文翻譯", key=f"show_s_cn_{reading_id}_{i}"):
-                    st.session_state[f"s_cn_{reading_id}_{i}"] = not st.session_state.get(f"s_cn_{reading_id}_{i}", False)
-                    st.rerun()
+            if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
+                audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
+                if audio_bytes: 
+                    st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                     
-                c1, c2 = st.columns([1, 2])
-                if c1.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
-                    audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
-                    if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
-                st.divider()
-
-    with tabs[2]:
-        c_head, c_slider = st.columns([1, 2])
-        with c_head:
-            st.subheader("段落練習")
-        with c_slider:
-            font_scale = st.slider("📏 調整段落字體大小", min_value=1.0, max_value=3.0, value=1.2, step=0.1, key=f"font_slider_{reading_id}", label_visibility="collapsed")
-            
-        for i, p in enumerate(paragraphs_list):
-            with st.expander(f"第 {i+1} 段", expanded=False):
-                st.markdown(f'<div style="font-size: {font_scale}rem; line-height: 1.8; padding: 10px 0;">{p}</div>', unsafe_allow_html=True)
+            if cols[2].button("➡️ 向後", key=f"next_w_{reading_id}"):
+                st.session_state[f'w_idx_{reading_id}'] = (w_idx + 1) % len(word_list)
+                st.session_state[f'w_flip_{reading_id}'] = False
+                st.rerun()
                 
-                c1, c2 = st.columns([1, 2])
-                if c1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
-                    audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
-                    if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
+            if cols[3].button("🔀 隨機", key=f"shuffle_w_{reading_id}"):
+                random.shuffle(st.session_state[f'word_list_{reading_id}'])
+                st.session_state[f'w_idx_{reading_id}'] = 0
+                st.rerun()
+                
+            if cols[4].button("🔄 翻轉/中文", key=f"flip_w_{reading_id}"):
+                st.session_state[f'w_flip_{reading_id}'] = not w_flip
+                st.rerun()
+
+        with tabs[1]:
+            st.subheader("重要單句")
+            for i, s in enumerate(sents):
+                with st.container():
+                    st.info(s)
+                    
+                    if st.session_state.get(f"s_cn_{reading_id}_{i}", False):
+                        st.markdown(f'<div class="cn-text-box">{sent_trans[i] if i < len(sent_trans) else "（翻譯內容更新中）"}</div>', unsafe_allow_html=True)
+                    
+                    if st.button("顯示/隱藏中文翻譯", key=f"show_s_cn_{reading_id}_{i}"):
+                        st.session_state[f"s_cn_{reading_id}_{i}"] = not st.session_state.get(f"s_cn_{reading_id}_{i}", False)
+                        st.rerun()
+                        
+                    c1, c2 = st.columns([1, 2])
+                    if c1.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
+                        audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
+                        if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+                    c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
+                    st.divider()
+
+        with tabs[2]:
+            c_head, c_slider = st.columns([1, 2])
+            with c_head:
+                st.subheader("段落練習")
+            with c_slider:
+                font_scale = st.slider("📏 調整段落字體大小", min_value=1.0, max_value=3.0, value=1.2, step=0.1, key=f"font_slider_{reading_id}", label_visibility="collapsed")
+                
+            for i, p in enumerate(paragraphs_list):
+                with st.expander(f"第 {i+1} 段", expanded=False):
+                    st.markdown(f'<div style="font-size: {font_scale}rem; line-height: 1.8; padding: 10px 0;">{p}</div>', unsafe_allow_html=True)
+                    
+                    c1, c2 = st.columns([1, 2])
+                    if c1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
+                        audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
+                        if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+                    c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
