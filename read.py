@@ -112,34 +112,36 @@ st.title("朗讀訓練機")
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
-    ["1號朗讀稿", "2號朗讀稿", "3號朗讀稿", "4號朗讀稿"],
+    ["請選擇", "1號朗讀稿", "2號朗讀稿", "3號朗讀稿", "4號朗讀稿"],
     index=0,
     label_visibility="collapsed"
 )
 
-reading_id = "1" if "1" in selected_reading else "2" if "2" in selected_reading else "3" if "3" in selected_reading else "4"
-current_data = load_reading_text(reading_id)
-
-translation_map = current_data["translation_map"]
-sent_trans = current_data["sent_trans"]
-sents = current_data["sents"]
-paragraphs_list = current_data["paragraphs"]
-
-if f'word_list_{reading_id}' not in st.session_state:
-    st.session_state[f'word_list_{reading_id}'] = sorted(list(translation_map.keys())) if translation_map else []
-if f'w_idx_{reading_id}' not in st.session_state: 
-    st.session_state[f'w_idx_{reading_id}'] = 0
-if f'w_flip_{reading_id}' not in st.session_state: 
-    st.session_state[f'w_flip_{reading_id}'] = False
-
-word_list = st.session_state[f'word_list_{reading_id}']
-
 st.divider()
 
-if not word_list or not paragraphs_list:
-    st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
+if selected_reading == "請選擇":
+    st.info("👆 請從上方下拉選單選擇一份朗讀稿件，以展開訓練內容。")
 else:
-    with st.expander("📖 展開訓練內容", expanded=False):
+    reading_id = "1" if "1" in selected_reading else "2" if "2" in selected_reading else "3" if "3" in selected_reading else "4"
+    current_data = load_reading_text(reading_id)
+
+    translation_map = current_data["translation_map"]
+    sent_trans = current_data["sent_trans"]
+    sents = current_data["sents"]
+    paragraphs_list = current_data["paragraphs"]
+
+    if f'word_list_{reading_id}' not in st.session_state:
+        st.session_state[f'word_list_{reading_id}'] = sorted(list(translation_map.keys())) if translation_map else []
+    if f'w_idx_{reading_id}' not in st.session_state: 
+        st.session_state[f'w_idx_{reading_id}'] = 0
+    if f'w_flip_{reading_id}' not in st.session_state: 
+        st.session_state[f'w_flip_{reading_id}'] = False
+
+    word_list = st.session_state[f'word_list_{reading_id}']
+
+    if not word_list or not paragraphs_list:
+        st.warning(f"⚠️ 偵測到【{selected_reading}】文字專區尚未配置數據，請於 assets/text/ 補齊對應文字檔。")
+    else:
         tabs = st.tabs(["🎴 生詞詞卡", "📏 重要單句", "📄 段落練習"])
 
         with tabs[0]:
