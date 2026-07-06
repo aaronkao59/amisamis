@@ -6,10 +6,10 @@ from gtts import gTTS
 import io
 
 # --- 頁面配置 ---
-st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")[cite: 1]
+st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
 # --- 第一層：首頁頂部極簡控制台 (視覺縮放與選單) ---
-st.title("朗讀訓練機")[cite: 1]
+st.title("朗讀訓練機")
 
 col_select, col_scale = st.columns([3, 1])
 with col_select:
@@ -18,7 +18,7 @@ with col_select:
         ["1號朗讀稿", "2號朗讀稿", "3號朗讀稿", "4號朗讀稿"],
         index=0,
         label_visibility="collapsed"
-    )[cite: 1]
+    )
 with col_scale:
     # 建立底層視覺映射的動態變數
     font_scale = st.slider("📏 字體與排版縮放", min_value=0.8, max_value=2.5, value=1.0, step=0.1, label_visibility="collapsed")
@@ -94,8 +94,9 @@ st.markdown(f"""
         font-size: calc(1rem * var(--base-scale)) !important;
     }}
 </style>
-""", unsafe_allow_html=True)[cite: 1]
+""", unsafe_allow_html=True)
 
 # 依據選擇動態計算路由 ID 並秒讀資料
-reading_id = "1" if "1" in selected_reading else "2" if "2" in selected_reading else "3" if "3" in selected_reading else "4"[cite: 1]
-# ... (接續你原本 load_reading_text 與 get_audio 的核心邏輯) ...
+reading_id = "1" if "1" in selected_reading else "2" if "2" in selected_reading else "3" if "3" in selected_reading else "4"
+
+# ... (在此接續您原本 load_reading_text 與 get_audio 等核心邏輯) ...
