@@ -1,6 +1,8 @@
 import streamlit as st
+import re
 import random
 import os
+import io
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
@@ -49,7 +51,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 數據動態加載模組 (強化版：容錯與正規化) ---
+# --- 數據動態加載模組 ---
 def load_reading_text(read_id):
     base_path = f"assets/text/reading_{read_id}"
     data = {"translation_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
@@ -61,7 +63,7 @@ def load_reading_text(read_id):
     if os.path.exists(w_path):
         with open(w_path, "r", encoding="utf-8") as f:
             for line in f:
-                # 自動將全形冒號替換為半形，增強容錯率
+                # 確保健壯性，加上 strip() 去除可能的多餘空白
                 normalized_line = line.replace("：", ":") 
                 if ":" in normalized_line:
                     k, v = normalized_line.strip().split(":", 1)
@@ -81,14 +83,14 @@ def load_reading_text(read_id):
     if os.path.exists(p_path):
         with open(p_path, "r", encoding="utf-8") as f:
             content = f.read()
-            # 改用 splitlines()，只要非空白就獨立成段
+            # 使用 splitlines 保證各種換行符號都能正確切割段落
             data["paragraphs"] = [p.strip() for p in content.splitlines() if p.strip()]
 
     return data
 
-# --- 智慧音訊路由器 (強化版：雙位數補零與靜音防禦) ---
+# --- 智慧音訊路由器 ---
 def get_audio(read_id, category, index, text):
-    # 精準配對雙位數補零的檔名規則
+    # 【修復】強制對所有音檔實施 02d (雙位數) 補零，精準對應實體檔名
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
     elif category == "words":
@@ -104,7 +106,7 @@ def get_audio(read_id, category, index, text):
         with open(file_path, "rb") as f:
             return f.read()
     else:
-        # 找不到本機音檔時直接回傳 None，避免發出錯誤語言的 TTS
+        # 【修復】移除 gTTS 義大利文發音，找不到檔案時回傳 None 防止崩潰
         return None
 
 # --- 第一層：首頁頂部極簡控制台 ---
@@ -131,6 +133,8 @@ else:
     paragraphs_list = current_data["paragraphs"]
 
     if f'word_list_{reading_id}' not in st.session_state:
+        # 【修復】拔除 sorted()！利用 Python 字典保留寫入順序的特性
+        # 這樣 UI 的 w_idx + 1 就能完美對應 word_01.mp3, word_02.mp3
         st.session_state[f'word_list_{reading_id}'] = list(translation_map.keys()) if translation_map else []
     if f'w_idx_{reading_id}' not in st.session_state: 
         st.session_state[f'w_idx_{reading_id}'] = 0
@@ -161,6 +165,7 @@ else:
                 st.rerun()
                 
             if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
+                # 這裡的 w_idx + 1 現在會精準生成 word_01.mp3
                 audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
                 if audio_bytes: 
                     st.audio(audio_bytes, format="audio/mp3", autoplay=True)
