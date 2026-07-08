@@ -1,121 +1,50 @@
-Nalemedan: 幸福的 / 有福的
-miharateng: 回想 / 記憶
-tadacinganganay: 非常有名的
-mafana’ay: 會的 / 曉得的
-milietan: 賺錢 / 經商
-tamdaw: 人
-katanestesan: 年輕力壯時
-mihecaan: 年紀 / 歲數
-masareko: 固定的 / 年老穩定的
-malokatayalan: 工作職位
-maolahay: 喜歡的 / 愛好的
-palata’ang: 誇大 / 炫耀
-palosiyang: 張揚 / 公開
-kaadihay: 許多 / 大量
-dafong: 財產 / 物資
-sameced: 偏偏 / 唯獨
-maolah: 喜歡 / 愛好
-waneng: 糖 / 糖果
-laloma’: 裡面
-loma’: 家 / 房子
-icowacowa: 到處 / 任何地方
-mateli: 放置
-masadak: 出去
-mihawikid: 攜帶
-’alofo: 口袋 / 攜物袋
-kafer: 衣服的下擺 / 襯衫
-paka’araw: 看見 / 看到
-palilamen: 分給他們 / 贈送給他們
-safaheka: 感到驚奇 / 納悶
-’alomanay: 眾人 / 許多人
-pinangan: 行為 / 習性
-makafana’: 得知 / 瞭解
-mitiya: 媒體
-masaraod: 接近 / 訪問
-kinapina: 幾次
-matiniay: 這樣的
-demak: 事情
-Hanaw: 原來 / 唉呀
-kaemang: 年幼 / 小時候
-kakaenen: 食物
-kafecol: 吃飽
-mangalef: 更加 / 尤其是
-makaen: 吃到
-kinacecay: 有一次
-itira: 在那裡
-kahacikay: 快速
-comikay: 奔跑
-pakasongtol: 不小心撞到
-saciriko’: 穿著衣服的
-tadamaanay: 體面的 / 了不起的
-talaw: 害怕
-faloco’: 心裡 / 心靈
-mamakaketer: 要生氣的
-’araw: 看哪 / 結果
-keteketer: 生氣
-tatawa: 微笑 / 歡笑
-palowad: 扶起來
-takowanan: 對我
-pafeli: 给予 / 贈送
-Itiya: 那時候
-mafana’: 明白 / 懂得
-masamaanay: 怎麼樣的
-micedemay: 甜美的
-hananay: 所謂的
-kafana’an: 所知道的
-malemeday: 幸福的
-lipahakay: 快樂的
-sakafalic: 轉變的原因
-rakat: 步伐 / 行程
-’orip: 生命 / 一生
-pakoyoc: 貧窮的
-pakayni: 透過 / 經由
-lalok: 勤奮
-pisa’icel: 努力 / 用心
-matayal: 工作
-malasaka: 成為...的原因
-tawkian: 老闆 / 企業家
-tata’akay: 巨大的 / 大型之
-katayalan: 事業 / 職場
-kalata’angan: 光榮 / 驕傲
-icowacowaay: 各地的
-fangcalay: 美好的 / 善良的
-’idepet: 吝嗇 / 據為己有
-pasadak: 拿出 / 奉獻
-mipadang: 幫助
-mapakoyocay: 貧窮的人們
-Sowal: 說 / 說道
-malaheci: 完成 / 成功
-tayal: 工作 / 任務
-kanikaw: 缺乏
-manmaan: 任何東西 / 各種
-sakakomaenan: 吃東西的資金或管道
-sapinanoman: 喝東西的資金或管道
-lahoday: 輕鬆 / 寬裕
-cango’ot: 缺乏
-matiyaay: 那樣的
-raheker: 快樂 / 欣慰
-orasaka: 所以
-maharateng: 被想起
-pipadangan: 給予幫助時
-matatiko: 返回 / 回報
-malipahakay: 快樂的
-pising: 面貌 / 臉孔
-mietanay: 賺錢的
-tawki: 老闆
-pikilim: 尋找
-sakaeso’: 多麼美味 / 甜到心窩
-saraheker: 無比快樂
-haratengen: 心思 / 想法
-pitolas: 停止
-panocay: 傳遞 / 持續
-sarakat: 第一次 / 最初
-pakatanam: 使...品嚐
-kaeso’: 美味的 / 甜美的
-malasakalemed: 成為福氣
-ka’idi: 吝嗇 / 不願
-lihaday: 安舒 / 無憂無慮
-tamdamdaw: 每個人
-tireng: 自身 / 自己
-pakalayap: 接收到 / 得到
-paco’ay: 回報 / 回應
+tadacinganganay：非常有名的
+katanestesan：年輕力壯時
+milietan：賺錢 / 經商
+malokatayalan：工作職位
+palata’ang：誇大 / 炫耀
+palosiyang：張揚 / 公開
+sameced：偏偏 / 唯獨
+icowacowa：到處 / 任何地方
+mihawikid：攜帶
+’alofo：口袋 / 攜物袋
+kafer：衣服的下擺 / 襯衫
+paka’araw：看見 / 看到
+palilamen：分給他們 / 贈送給他們
+safaheka：感到驚奇 / 納悶
+’alomanay：眾人 / 許多人
+pinangan：行為 / 習性
+makafana’：得知 / 瞭解
+masaraod：接近 / 訪問
+kinapina：幾次
+matiniay：這樣的
+mangalef：更加 / 尤其是
+kahacikay：快速
+pakasongtol：不小心撞到
+saciriko’：穿著衣服的
+tadamaanay：體面的 / 了不起的
+mamakaketer：要生氣的
+keteketer：生氣
+takowanan：對我
+masamaanay：怎麼樣的
+micedemay：甜美的
+kafana’an：所知道的
+sakafalic：轉變的原因
+pakoyoc：貧窮的
+pakayni：透過 / 經由
+pisa’icel：努力 / 用心
+malasaka：成為...的原因
+kalata’angan：光榮 / 驕傲
+icowacowaay：各地的
+’idepet：吝嗇 / 據為己有
+mapakoyocay：貧窮的人們
+malaheci：完成 / 成功
+sakakomaenan：吃東西的資金或管道
+sapinanoman：喝東西的資金或管道
+cango’ot：缺乏
+matiyaay：那樣的
+maharateng：被想起
+matatiko：返回 / 回報
+sakaeso’：多麼美味 / 甜到心窩
+saraheker：無比快樂
+pakatanam：使...品嚐
