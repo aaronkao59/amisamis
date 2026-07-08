@@ -1,9 +1,6 @@
 import streamlit as st
-import re
 import random
 import os
-from gtts import gTTS
-import io
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
@@ -52,7 +49,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 數據動態加載模組 ---
+# --- 數據動態加載模組 (強化版：容錯與正規化) ---
 def load_reading_text(read_id):
     base_path = f"assets/text/reading_{read_id}"
     data = {"translation_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
@@ -64,9 +61,11 @@ def load_reading_text(read_id):
     if os.path.exists(w_path):
         with open(w_path, "r", encoding="utf-8") as f:
             for line in f:
-                if ":" in line:
-                    k, v = line.strip().split(":", 1)
-                    data["translation_map"][k] = v
+                # 自動將全形冒號替換為半形，增強容錯率
+                normalized_line = line.replace("：", ":") 
+                if ":" in normalized_line:
+                    k, v = normalized_line.strip().split(":", 1)
+                    data["translation_map"][k.strip()] = v.strip()
 
     s_path = os.path.join(base_path, "sentences.txt")
     if os.path.exists(s_path):
@@ -82,16 +81,22 @@ def load_reading_text(read_id):
     if os.path.exists(p_path):
         with open(p_path, "r", encoding="utf-8") as f:
             content = f.read()
-            data["paragraphs"] = [p.strip() for p in content.split("\n\n") if p.strip()]
+            # 改用 splitlines()，只要非空白就獨立成段
+            data["paragraphs"] = [p.strip() for p in content.splitlines() if p.strip()]
 
     return data
 
-# --- 智慧音訊路由器 ---
+# --- 智慧音訊路由器 (強化版：雙位數補零與靜音防禦) ---
 def get_audio(read_id, category, index, text):
+    # 精準配對雙位數補零的檔名規則
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
+    elif category == "words":
+        file_name = f"word_{index:02d}.mp3"
+    elif category == "sentences":
+        file_name = f"sentence_{index:02d}.mp3"
     else:
-        file_name = f"{category[:-1]}_{index}.mp3"
+        file_name = f"{category[:-1]}_{index:02d}.mp3"
         
     file_path = f"assets/audio/readings_{read_id}/{category}/{file_name}"
     
@@ -99,13 +104,8 @@ def get_audio(read_id, category, index, text):
         with open(file_path, "rb") as f:
             return f.read()
     else:
-        try:
-            tts = gTTS(text=text, lang='it')
-            fp = io.BytesIO()
-            tts.write_to_fp(fp)
-            return fp.getvalue()
-        except:
-            return None
+        # 找不到本機音檔時直接回傳 None，避免發出錯誤語言的 TTS
+        return None
 
 # --- 第一層：首頁頂部極簡控制台 ---
 st.title("朗讀訓練機")
@@ -131,7 +131,7 @@ else:
     paragraphs_list = current_data["paragraphs"]
 
     if f'word_list_{reading_id}' not in st.session_state:
-        st.session_state[f'word_list_{reading_id}'] = sorted(list(translation_map.keys())) if translation_map else []
+        st.session_state[f'word_list_{reading_id}'] = list(translation_map.keys()) if translation_map else []
     if f'w_idx_{reading_id}' not in st.session_state: 
         st.session_state[f'w_idx_{reading_id}'] = 0
     if f'w_flip_{reading_id}' not in st.session_state: 
