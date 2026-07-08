@@ -53,7 +53,7 @@ st.markdown("""
 
 # --- 數據動態加載模組 ---
 def load_reading_text(read_id):
-    # 【修復】新增 "audio_index_map" 來紀錄每個單字的「絕對物理順序」
+    # 紀錄每個單字的「絕對物理順序」
     data = {"translation_map": {}, "audio_index_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
     
     base_path = f"assets/text/reading_{read_id}"
@@ -62,7 +62,7 @@ def load_reading_text(read_id):
 
     w_path = os.path.join(base_path, "words.txt")
     if os.path.exists(w_path):
-        valid_word_count = 1  # 獨立的物理計數器
+        valid_word_count = 1  
         with open(w_path, "r", encoding="utf-8") as f:
             for line in f:
                 normalized_line = line.replace("：", ":") 
@@ -70,7 +70,6 @@ def load_reading_text(read_id):
                     k, v = normalized_line.strip().split(":", 1)
                     k_str = k.strip()
                     data["translation_map"][k_str] = v.strip()
-                    # 鎖定絕對對應：記錄這個單字是第幾個被讀進來的
                     data["audio_index_map"][k_str] = valid_word_count 
                     valid_word_count += 1
 
@@ -99,7 +98,8 @@ def get_audio(read_id, category, index, text):
     elif category == "words":
         file_name = f"word_{index:02d}.mp3"
     elif category == "sentences":
-        file_name = f"sentence_{index:02d}.mp3"
+        # 【修正】精準對應 Github 上傳的 sent_01.mp3 命名規則
+        file_name = f"sent_{index:02d}.mp3"
     else:
         file_name = f"{category[:-1]}_{index:02d}.mp3"
         
@@ -130,7 +130,7 @@ else:
     current_data = load_reading_text(reading_id)
 
     translation_map = current_data["translation_map"]
-    audio_index_map = current_data["audio_index_map"] # 提取物理對應表
+    audio_index_map = current_data["audio_index_map"] 
     sent_trans = current_data["sent_trans"]
     sents = current_data["sents"]
     paragraphs_list = current_data["paragraphs"]
@@ -156,7 +156,6 @@ else:
             curr_w = word_list[w_idx]
             display = translation_map[curr_w] if w_flip else curr_w
             
-            # 【修復】不管陣列怎麼洗牌，永遠取出這個單字真正的物理編號
             original_audio_idx = audio_index_map[curr_w]
             
             st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
@@ -169,7 +168,6 @@ else:
                 st.rerun()
                 
             if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-                # 這裡傳入的是 original_audio_idx，保證永遠對到正確的 mp3！
                 audio_bytes = get_audio(reading_id, "words", original_audio_idx, curr_w)
                 if audio_bytes: 
                     st.audio(audio_bytes, format="audio/mp3", autoplay=True)
@@ -203,6 +201,7 @@ else:
                         
                     c1, c2 = st.columns([1, 2])
                     if c1.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
+                        # 呼叫 sentences 分類，並透過 get_audio 轉譯為 sent_XX.mp3
                         audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
                         if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                     c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
