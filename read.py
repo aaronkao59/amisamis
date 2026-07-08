@@ -53,21 +53,26 @@ st.markdown("""
 
 # --- 數據動態加載模組 ---
 def load_reading_text(read_id):
-    base_path = f"assets/text/reading_{read_id}"
-    data = {"translation_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
+    # 【修復】新增 "audio_index_map" 來紀錄每個單字的「絕對物理順序」
+    data = {"translation_map": {}, "audio_index_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
     
+    base_path = f"assets/text/reading_{read_id}"
     if not os.path.exists(base_path):
         return data
 
     w_path = os.path.join(base_path, "words.txt")
     if os.path.exists(w_path):
+        valid_word_count = 1  # 獨立的物理計數器
         with open(w_path, "r", encoding="utf-8") as f:
             for line in f:
-                # 確保健壯性，加上 strip() 去除可能的多餘空白
                 normalized_line = line.replace("：", ":") 
                 if ":" in normalized_line:
                     k, v = normalized_line.strip().split(":", 1)
-                    data["translation_map"][k.strip()] = v.strip()
+                    k_str = k.strip()
+                    data["translation_map"][k_str] = v.strip()
+                    # 鎖定絕對對應：記錄這個單字是第幾個被讀進來的
+                    data["audio_index_map"][k_str] = valid_word_count 
+                    valid_word_count += 1
 
     s_path = os.path.join(base_path, "sentences.txt")
     if os.path.exists(s_path):
@@ -83,14 +88,12 @@ def load_reading_text(read_id):
     if os.path.exists(p_path):
         with open(p_path, "r", encoding="utf-8") as f:
             content = f.read()
-            # 使用 splitlines 保證各種換行符號都能正確切割段落
             data["paragraphs"] = [p.strip() for p in content.splitlines() if p.strip()]
 
     return data
 
 # --- 智慧音訊路由器 ---
 def get_audio(read_id, category, index, text):
-    # 【修復】強制對所有音檔實施 02d (雙位數) 補零，精準對應實體檔名
     if category == "paragraphs":
         file_name = f"para_{index:02d}.mp3"
     elif category == "words":
@@ -106,7 +109,6 @@ def get_audio(read_id, category, index, text):
         with open(file_path, "rb") as f:
             return f.read()
     else:
-        # 【修復】移除 gTTS 義大利文發音，找不到檔案時回傳 None 防止崩潰
         return None
 
 # --- 第一層：首頁頂部極簡控制台 ---
@@ -128,13 +130,12 @@ else:
     current_data = load_reading_text(reading_id)
 
     translation_map = current_data["translation_map"]
+    audio_index_map = current_data["audio_index_map"] # 提取物理對應表
     sent_trans = current_data["sent_trans"]
     sents = current_data["sents"]
     paragraphs_list = current_data["paragraphs"]
 
     if f'word_list_{reading_id}' not in st.session_state:
-        # 【修復】拔除 sorted()！利用 Python 字典保留寫入順序的特性
-        # 這樣 UI 的 w_idx + 1 就能完美對應 word_01.mp3, word_02.mp3
         st.session_state[f'word_list_{reading_id}'] = list(translation_map.keys()) if translation_map else []
     if f'w_idx_{reading_id}' not in st.session_state: 
         st.session_state[f'w_idx_{reading_id}'] = 0
@@ -155,6 +156,9 @@ else:
             curr_w = word_list[w_idx]
             display = translation_map[curr_w] if w_flip else curr_w
             
+            # 【修復】不管陣列怎麼洗牌，永遠取出這個單字真正的物理編號
+            original_audio_idx = audio_index_map[curr_w]
+            
             st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
             
             cols = st.columns([1, 1, 1, 1, 1.2]) 
@@ -165,8 +169,8 @@ else:
                 st.rerun()
                 
             if cols[1].button("🔊 發音", key=f"play_w_{reading_id}"):
-                # 這裡的 w_idx + 1 現在會精準生成 word_01.mp3
-                audio_bytes = get_audio(reading_id, "words", w_idx + 1, curr_w)
+                # 這裡傳入的是 original_audio_idx，保證永遠對到正確的 mp3！
+                audio_bytes = get_audio(reading_id, "words", original_audio_idx, curr_w)
                 if audio_bytes: 
                     st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                     
