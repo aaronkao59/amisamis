@@ -3,6 +3,7 @@ import re
 import random
 import os
 import io
+from datetime import date
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
@@ -48,12 +49,38 @@ st.markdown("""
         background-color: rgba(30, 144, 255, 0.1) !important;
         color: var(--text-color) !important;
     }
+
+    .header-container {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 15px;
+        margin-top: 10px;
+    }
+    
+    .header-title {
+        font-size: 2.2rem;
+        font-weight: bold;
+        margin: 0;
+        line-height: 1;
+        color: var(--text-color);
+    }
+
+    .countdown-box {
+        border: 2px solid #FF3B30;
+        border-radius: 25px;
+        padding: 6px 24px;
+        color: #007AFF;
+        font-size: 1.1rem;
+        font-weight: bold;
+        background-color: transparent;
+        letter-spacing: 1px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- 數據動態加載模組 ---
 def load_reading_text(read_id):
-    # 紀錄每個單字的「絕對物理順序」
     data = {"translation_map": {}, "audio_index_map": {}, "sents": [], "sent_trans": [], "paragraphs": []}
     
     base_path = f"assets/text/reading_{read_id}"
@@ -98,7 +125,6 @@ def get_audio(read_id, category, index, text):
     elif category == "words":
         file_name = f"word_{index:02d}.mp3"
     elif category == "sentences":
-        # 【修正】精準對應 Github 上傳的 sent_01.mp3 命名規則
         file_name = f"sent_{index:02d}.mp3"
     else:
         file_name = f"{category[:-1]}_{index:02d}.mp3"
@@ -111,8 +137,19 @@ def get_audio(read_id, category, index, text):
     else:
         return None
 
+# --- 日期倒數計算 ---
+target_date = date(2026, 9, 19)
+current_date = date.today()
+days_remaining = (target_date - current_date).days
+display_days = max(days_remaining, 0) 
+
 # --- 第一層：首頁頂部極簡控制台 ---
-st.title("朗讀訓練機")
+st.markdown(f"""
+<div class="header-container">
+    <div class="header-title">朗讀訓練機</div>
+    <div class="countdown-box">距離比賽還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
+</div>
+""", unsafe_allow_html=True)
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
@@ -201,7 +238,6 @@ else:
                         
                     c1, c2 = st.columns([1, 2])
                     if c1.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
-                        # 呼叫 sentences 分類，並透過 get_audio 轉譯為 sent_XX.mp3
                         audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
                         if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                     c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
