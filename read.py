@@ -66,6 +66,12 @@ st.markdown("""
         color: var(--text-color);
     }
 
+    .countdown-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
     .countdown-box {
         border: 2px solid #FF3B30;
         border-radius: 25px;
@@ -75,6 +81,13 @@ st.markdown("""
         font-weight: bold;
         background-color: transparent;
         letter-spacing: 1px;
+    }
+    
+    .subtitle-text {
+        color: gray;
+        font-size: 0.85rem;
+        margin-top: 6px;
+        letter-spacing: 0.5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -147,7 +160,10 @@ display_days = max(days_remaining, 0)
 st.markdown(f"""
 <div class="header-container">
     <div class="header-title">朗讀訓練機</div>
-    <div class="countdown-box">距離比賽還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
+    <div class="countdown-wrapper">
+        <div class="countdown-box">距離比賽還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
+        <div class="subtitle-text">115年海岸阿美語 國中組</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
