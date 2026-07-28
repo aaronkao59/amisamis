@@ -57,6 +57,12 @@ st.markdown("""
         margin-bottom: 15px;
         margin-top: 10px;
     }
+
+    .title-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
     
     .header-title {
         font-size: 2.2rem;
@@ -66,10 +72,11 @@ st.markdown("""
         color: var(--text-color);
     }
 
-    .countdown-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+    .subtitle-text {
+        color: gray;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+        margin: 0;
     }
 
     .countdown-box {
@@ -81,13 +88,6 @@ st.markdown("""
         font-weight: bold;
         background-color: transparent;
         letter-spacing: 1px;
-    }
-    
-    .subtitle-text {
-        color: gray;
-        font-size: 0.85rem;
-        margin-top: 6px;
-        letter-spacing: 0.5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -159,11 +159,11 @@ display_days = max(days_remaining, 0)
 # --- 第一層：首頁頂部極簡控制台 ---
 st.markdown(f"""
 <div class="header-container">
-    <div class="header-title">朗讀訓練機</div>
-    <div class="countdown-wrapper">
-        <div class="countdown-box">距離比賽還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
+    <div class="title-wrapper">
+        <div class="header-title">朗讀訓練機</div>
         <div class="subtitle-text">115年海岸阿美語 國中組</div>
     </div>
+    <div class="countdown-box">距離比賽還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
 </div>
 """, unsafe_allow_html=True)
 
