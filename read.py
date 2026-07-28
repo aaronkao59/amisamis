@@ -177,7 +177,7 @@ selected_reading = st.selectbox(
 st.divider()
 
 if selected_reading == "請選擇":
-    st.info("👆 請從上方下拉選單選擇一份朗讀稿件，以展開訓練內容。")
+    st.info("👆 從下拉選單選擇朗讀稿，展開訓練內容。")
 else:
     reading_id = "1" if "1" in selected_reading else "2" if "2" in selected_reading else "3" if "3" in selected_reading else "4"
     current_data = load_reading_text(reading_id)
