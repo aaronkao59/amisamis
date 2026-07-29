@@ -3,12 +3,12 @@ import re
 import random
 import os
 import io
-from datetime import date
+import datetime
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 樣式控制層 ---
+# --- 核心 CSS 樣式控制層 (🚀 優化：加入 RWD 手機響應式設計) ---
 st.markdown("""
 <style>
     .word-card {
@@ -50,10 +50,13 @@ st.markdown("""
         color: var(--text-color) !important;
     }
 
+    /* 頂部控制台液態佈局 */
     .header-container {
         display: flex;
+        flex-wrap: wrap; /* 允許元素在手機螢幕自動換行 */
         align-items: center;
-        gap: 20px;
+        justify-content: space-between;
+        gap: 15px;
         margin-bottom: 15px;
         margin-top: 10px;
     }
@@ -62,13 +65,14 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         gap: 5px;
+        min-width: 250px;
     }
     
     .header-title {
         font-size: 2.2rem;
         font-weight: bold;
         margin: 0;
-        line-height: 1;
+        line-height: 1.2;
         color: var(--text-color);
     }
 
@@ -83,11 +87,29 @@ st.markdown("""
         border: 2px solid #FF3B30;
         border-radius: 25px;
         padding: 6px 24px;
-        color: #007AFF;
+        color: #FF3B30; /* 調整為更醒目的顏色 */
         font-size: 1.1rem;
         font-weight: bold;
         background-color: transparent;
         letter-spacing: 1px;
+        white-space: nowrap;
+    }
+
+    /* 手機版專屬視覺優化 */
+    @media (max-width: 768px) {
+        .header-title {
+            font-size: 1.8rem;
+        }
+        .countdown-box {
+            width: 100%;
+            text-align: center;
+            font-size: 1rem;
+            padding: 8px 16px;
+        }
+        .word-card {
+            padding: 20px 10px;
+            min-height: 100px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -150,9 +172,10 @@ def get_audio(read_id, category, index, text):
     else:
         return None
 
-# --- 日期倒數計算 ---
-target_date = date(2026, 9, 19)
-current_date = date.today()
+# --- 🚀 優化：強制時區校準 (台北時間 UTC+8) ---
+taipei_tz = datetime.timezone(datetime.timedelta(hours=8))
+target_date = datetime.date(2026, 9, 19)
+current_date = datetime.datetime.now(taipei_tz).date()
 days_remaining = (target_date - current_date).days
 display_days = max(days_remaining, 0) 
 
@@ -213,6 +236,7 @@ else:
             
             st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
             
+            # 使用預設的流式排版，Streamlit 在手機版會自動將 column 垂直堆疊
             cols = st.columns([1, 1, 1, 1, 1.2]) 
             
             if cols[0].button("⬅️ 往前", key=f"prev_w_{reading_id}"):
