@@ -5,78 +5,34 @@ import os
 import io
 import datetime
 
-# 🚀 全域系統版本號 (可在此處自由更改版本號)
-APP_VERSION = "v1.1.0 (Ocean Breeze Edition)"
+# 🚀 全域系統版本號
+APP_VERSION = "v1.2.0 (Tribal Totem Edition)"
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 樣式控制層 (清淡海洋風) ---
+# --- 核心 CSS 樣式控制層 (少數民族圖騰風) ---
 st.markdown("""
 <style>
-    /* 全域文字與背景 (針對 Streamlit 預設佈局) */
+    /* 全域色彩與圖騰定義 */
     :root {
-        --ocean-primary: #008B8B; /* 深海青色 */
-        --ocean-secondary: #E0FFFF; /* 淺湖水藍 */
-        --ocean-accent: #20B2AA; /* 亮海綠 */
-        --ocean-text-dark: #004d4d; /* 深海藍文字 */
+        --tribal-red: #C62828;   /* 傳統紅 */
+        --tribal-black: #212121; /* 深邃黑 */
+        --tribal-bg: #FAF0E6;    /* 大地米色 (Linen) */
+        
+        /* 利用 CSS 漸層繪製編織幾何圖騰 */
+        --totem-pattern: repeating-linear-gradient(
+            45deg,
+            #C62828,
+            #C62828 10px,
+            #212121 10px,
+            #212121 20px
+        );
     }
 
     .stApp {
-        background-color: #F0F8FF !important; /* 愛麗絲藍背景 */
-        color: var(--ocean-text-dark) !important;
-    }
-
-    /* 詞卡樣式 */
-    .word-card {
-        border: 2px solid var(--ocean-primary);
-        border-radius: 15px;
-        padding: 30px 10px;
-        text-align: center;
-        background-color: #FFFFFF; 
-        color: var(--ocean-text-dark);
-        box-shadow: 0 4px 12px rgba(0, 139, 139, 0.15); /* 淡淡的海色陰影 */
-        margin-bottom: 20px;
-        min-height: 120px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    /* 按鈕樣式 */
-    .stButton > button {
-        width: 100%;
-        padding: 0.5rem 0.2rem !important;
-        font-size: 0.9rem !important;
-        border-radius: 8px;
-        border: 1px solid var(--ocean-accent) !important;
-        color: var(--ocean-primary) !important;
-        background-color: #FFFFFF !important;
-    }
-    .stButton > button:hover {
-        background-color: var(--ocean-secondary) !important;
-        color: var(--ocean-text-dark) !important;
-        border-color: var(--ocean-primary) !important;
-    }
-
-    /* 中文翻譯文字框 */
-    .cn-text-box {
-        color: var(--ocean-text-dark);
-        background-color: rgba(0, 139, 139, 0.1); 
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid var(--ocean-primary);
-        margin: 10px 0;
-        line-height: 1.6;
-        font-size: 0.95rem;
-    }
-
-    /* 資訊提示框 (st.info) */
-    .stInfo {
-        background-color: rgba(176, 224, 230, 0.3) !important; /* 淡淡的粉藍色 */
-        color: var(--ocean-text-dark) !important;
-        border-left-color: var(--ocean-primary) !important;
+        background-color: var(--tribal-bg) !important;
+        color: var(--tribal-black) !important;
     }
 
     /* 頂部控制台液態佈局 */
@@ -86,8 +42,23 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
         gap: 15px;
-        margin-bottom: 15px;
+        margin-bottom: 25px;
         margin-top: 10px;
+        border-bottom: 4px solid var(--tribal-black);
+        padding-bottom: 15px;
+        position: relative;
+    }
+    
+    /* 標題下方的裝飾性圖騰橫幅 */
+    .header-container::after {
+        content: "";
+        display: block;
+        position: absolute;
+        bottom: -12px;
+        left: 0;
+        height: 8px;
+        width: 100%;
+        background: var(--totem-pattern);
     }
 
     .title-wrapper {
@@ -98,37 +69,116 @@ st.markdown("""
     }
     
     .header-title {
-        font-size: 2.2rem;
-        font-weight: bold;
+        font-size: 2.4rem;
+        font-weight: 900;
         margin: 0;
         line-height: 1.2;
-        color: var(--ocean-primary);
+        color: var(--tribal-red);
+        letter-spacing: 2px;
     }
 
     .subtitle-text {
-        color: #5F9EA0; /* 珊瑚藍 */
-        font-size: 0.9rem;
-        letter-spacing: 0.5px;
+        color: var(--tribal-black);
+        font-size: 1rem;
+        font-weight: bold;
+        letter-spacing: 1px;
         margin: 0;
     }
 
-    /* 倒數計時框 */
+    /* 倒數計時框 (強烈對比) */
     .countdown-box {
-        border: 2px dashed var(--ocean-primary);
-        border-radius: 25px;
-        padding: 6px 24px;
-        color: var(--ocean-primary); 
+        border: 3px solid var(--tribal-black);
+        border-radius: 0px; /* 移除圓角，增加質樸感 */
+        padding: 8px 24px;
+        color: #FFFFFF; 
         font-size: 1.1rem;
         font-weight: bold;
-        background-color: rgba(224, 255, 255, 0.5); /* 半透明湖水藍 */
-        letter-spacing: 1px;
+        background-color: var(--tribal-red);
+        letter-spacing: 2px;
         white-space: nowrap;
+        box-shadow: 4px 4px 0px var(--tribal-black);
+    }
+
+    /* 詞卡樣式：帶有頂部圖騰與粗曠陰影 */
+    .word-card {
+        border: 3px solid var(--tribal-black);
+        border-radius: 4px;
+        padding: 35px 10px 20px 10px;
+        text-align: center;
+        background-color: #FFFFFF; 
+        color: var(--tribal-black);
+        box-shadow: 6px 6px 0px var(--tribal-red);
+        margin-bottom: 25px;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    
+    /* 詞卡頂部圖騰裝飾 */
+    .word-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 10px;
+        background: var(--totem-pattern);
+    }
+    
+    /* 按鈕樣式：粗黑框與色塊陰影互動 */
+    .stButton > button {
+        width: 100%;
+        padding: 0.5rem 0.2rem !important;
+        font-size: 0.95rem !important;
+        border-radius: 4px;
+        border: 2px solid var(--tribal-black) !important;
+        color: var(--tribal-black) !important;
+        background-color: #FFFFFF !important;
+        font-weight: 800 !important;
+        box-shadow: 3px 3px 0px var(--tribal-black);
+        transition: all 0.1s ease-in-out;
+    }
+    .stButton > button:hover {
+        background-color: var(--tribal-red) !important;
+        color: #FFFFFF !important;
+        box-shadow: 1px 1px 0px var(--tribal-black);
+        transform: translate(2px, 2px); /* 點擊下壓效果 */
+    }
+
+    /* 中文翻譯文字框 */
+    .cn-text-box {
+        color: var(--tribal-black);
+        background-color: #FFFFFF; 
+        padding: 15px;
+        border: 2px dashed var(--tribal-black);
+        border-left: 6px solid var(--tribal-red);
+        margin: 10px 0;
+        line-height: 1.6;
+        font-size: 1rem;
+        font-weight: bold;
+    }
+
+    /* 資訊提示框 (st.info) */
+    .stInfo {
+        background-color: #FFFFFF !important; 
+        color: var(--tribal-black) !important;
+        border: 2px solid var(--tribal-black) !important;
+        border-left: 6px solid var(--tribal-black) !important;
+        box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+    }
+
+    /* 頁尾版權文字 */
+    div[data-testid="stCaptionContainer"] p {
+        color: var(--tribal-black) !important;
+        font-weight: bold;
+        text-align: center;
     }
 
     /* 手機版專屬視覺優化 */
     @media (max-width: 768px) {
         .header-title {
-            font-size: 1.8rem;
+            font-size: 2rem;
         }
         .countdown-box {
             width: 100%;
@@ -137,7 +187,7 @@ st.markdown("""
             padding: 8px 16px;
         }
         .word-card {
-            padding: 20px 10px;
+            padding: 30px 10px 15px 10px;
             min-height: 100px;
         }
     }
@@ -264,7 +314,7 @@ else:
             
             original_audio_idx = audio_index_map[curr_w]
             
-            st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="word-card"><h2>{display}</h2><p style="color:gray; font-weight:bold;">{w_idx+1}/{len(word_list)}</p></div>', unsafe_allow_html=True)
             
             # 使用預設的流式排版，Streamlit 在手機版會自動將 column 垂直堆疊
             cols = st.columns([1, 1, 1, 1, 1.2]) 
