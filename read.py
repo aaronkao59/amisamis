@@ -78,7 +78,7 @@ st.markdown("""
     }
 
     .subtitle-text {
-        color: var(--tribal-black);
+        color: gray;
         font-size: 1rem;
         font-weight: bold;
         letter-spacing: 1px;
