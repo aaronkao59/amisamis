@@ -5,6 +5,9 @@ import os
 import io
 import datetime
 
+# 🚀 全域系統版本號 (可在此處自由更改版本號)
+APP_VERSION = "v1.0.0"
+
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
@@ -299,3 +302,7 @@ else:
                         audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                         if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                     c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
+
+# --- 頁尾版權宣告 ---
+st.divider()
+st.caption(f"© 2026 115朗讀練習機 singsi sawmAh ｜ 系統版本：**{APP_VERSION}**")
