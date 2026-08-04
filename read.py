@@ -6,22 +6,36 @@ import io
 import datetime
 
 # 🚀 全域系統版本號 (可在此處自由更改版本號)
-APP_VERSION = "v1.0.0"
+APP_VERSION = "v1.1.0 (Ocean Breeze Edition)"
 
 # --- 頁面配置 ---
 st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
 
-# --- 核心 CSS 樣式控制層 (🚀 優化：加入 RWD 手機響應式設計) ---
+# --- 核心 CSS 樣式控制層 (清淡海洋風) ---
 st.markdown("""
 <style>
+    /* 全域文字與背景 (針對 Streamlit 預設佈局) */
+    :root {
+        --ocean-primary: #008B8B; /* 深海青色 */
+        --ocean-secondary: #E0FFFF; /* 淺湖水藍 */
+        --ocean-accent: #20B2AA; /* 亮海綠 */
+        --ocean-text-dark: #004d4d; /* 深海藍文字 */
+    }
+
+    .stApp {
+        background-color: #F0F8FF !important; /* 愛麗絲藍背景 */
+        color: var(--ocean-text-dark) !important;
+    }
+
+    /* 詞卡樣式 */
     .word-card {
-        border: 2px solid #4CAF50;
+        border: 2px solid var(--ocean-primary);
         border-radius: 15px;
         padding: 30px 10px;
         text-align: center;
-        background-color: var(--secondary-bg-color); 
-        color: var(--text-color);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        background-color: #FFFFFF; 
+        color: var(--ocean-text-dark);
+        box-shadow: 0 4px 12px rgba(0, 139, 139, 0.15); /* 淡淡的海色陰影 */
         margin-bottom: 20px;
         min-height: 120px;
         display: flex;
@@ -30,33 +44,45 @@ st.markdown("""
         justify-content: center;
     }
     
+    /* 按鈕樣式 */
     .stButton > button {
         width: 100%;
         padding: 0.5rem 0.2rem !important;
         font-size: 0.9rem !important;
         border-radius: 8px;
+        border: 1px solid var(--ocean-accent) !important;
+        color: var(--ocean-primary) !important;
+        background-color: #FFFFFF !important;
+    }
+    .stButton > button:hover {
+        background-color: var(--ocean-secondary) !important;
+        color: var(--ocean-text-dark) !important;
+        border-color: var(--ocean-primary) !important;
     }
 
+    /* 中文翻譯文字框 */
     .cn-text-box {
-        color: var(--text-color);
-        background-color: rgba(76, 175, 80, 0.15); 
+        color: var(--ocean-text-dark);
+        background-color: rgba(0, 139, 139, 0.1); 
         padding: 15px;
         border-radius: 10px;
-        border-left: 5px solid #4CAF50;
+        border-left: 5px solid var(--ocean-primary);
         margin: 10px 0;
         line-height: 1.6;
         font-size: 0.95rem;
     }
 
+    /* 資訊提示框 (st.info) */
     .stInfo {
-        background-color: rgba(30, 144, 255, 0.1) !important;
-        color: var(--text-color) !important;
+        background-color: rgba(176, 224, 230, 0.3) !important; /* 淡淡的粉藍色 */
+        color: var(--ocean-text-dark) !important;
+        border-left-color: var(--ocean-primary) !important;
     }
 
     /* 頂部控制台液態佈局 */
     .header-container {
         display: flex;
-        flex-wrap: wrap; /* 允許元素在手機螢幕自動換行 */
+        flex-wrap: wrap; 
         align-items: center;
         justify-content: space-between;
         gap: 15px;
@@ -76,24 +102,25 @@ st.markdown("""
         font-weight: bold;
         margin: 0;
         line-height: 1.2;
-        color: var(--text-color);
+        color: var(--ocean-primary);
     }
 
     .subtitle-text {
-        color: gray;
+        color: #5F9EA0; /* 珊瑚藍 */
         font-size: 0.9rem;
         letter-spacing: 0.5px;
         margin: 0;
     }
 
+    /* 倒數計時框 */
     .countdown-box {
-        border: 2px solid #FF3B30;
+        border: 2px dashed var(--ocean-primary);
         border-radius: 25px;
         padding: 6px 24px;
-        color: #FF3B30; /* 調整為更醒目的顏色 */
+        color: var(--ocean-primary); 
         font-size: 1.1rem;
         font-weight: bold;
-        background-color: transparent;
+        background-color: rgba(224, 255, 255, 0.5); /* 半透明湖水藍 */
         letter-spacing: 1px;
         white-space: nowrap;
     }
