@@ -254,7 +254,7 @@ def get_audio(read_id, category, index, text):
 
 # --- 🚀 優化：強制時區校準 (台北時間 UTC+8) ---
 taipei_tz = datetime.timezone(datetime.timedelta(hours=8))
-target_date = datetime.date(2026, 12, 05)
+target_date = datetime.date(2026, 12, 5)
 current_date = datetime.datetime.now(taipei_tz).date()
 days_remaining = (target_date - current_date).days
 display_days = max(days_remaining, 0) 
