@@ -352,7 +352,7 @@ else:
                     if st.session_state.get(f"s_cn_{reading_id}_{i}", False):
                         st.markdown(f'<div class="cn-text-box">{sent_trans[i] if i < len(sent_trans) else "（翻譯內容更新中）"}</div>', unsafe_allow_html=True)
                     
-                    if st.button("顯示/隱藏中文翻譯", key=f"show_s_cn_{reading_id}_{i}"):
+                    if st.button("中文翻譯", key=f"show_s_cn_{reading_id}_{i}"):
                         st.session_state[f"s_cn_{reading_id}_{i}"] = not st.session_state.get(f"s_cn_{reading_id}_{i}", False)
                         st.rerun()
                         
