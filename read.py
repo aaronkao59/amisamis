@@ -272,7 +272,7 @@ st.markdown(f"""
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
-    ["請選擇", "文章一", "文章二", "文章三", "文章四"],
+    ["請選擇", "1號朗讀稿", "2號朗讀稿", "3號朗讀稿", "4號朗讀稿"],
     index=0,
     label_visibility="collapsed"
 )
