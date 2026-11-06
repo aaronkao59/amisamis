@@ -9,7 +9,7 @@ import datetime
 APP_VERSION = "v1.2.0 (Tribal Totem Edition)"
 
 # --- 頁面配置 ---
-st.set_page_config(page_title="朗讀訓練機", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="朗讀機", layout="wide", initial_sidebar_state="collapsed")
 
 # --- 核心 CSS 樣式控制層 (少數民族圖騰風) ---
 st.markdown("""
