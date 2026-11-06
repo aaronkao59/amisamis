@@ -356,11 +356,9 @@ else:
                         st.session_state[f"s_cn_{reading_id}_{i}"] = not st.session_state.get(f"s_cn_{reading_id}_{i}", False)
                         st.rerun()
                         
-                    c1, c2 = st.columns([1, 2])
-                    if c1.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
+                    if st.button("🔊 播放句子", key=f"play_s_{reading_id}_{i}"):
                         audio_bytes = get_audio(reading_id, "sentences", i + 1, s)
                         if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                    c2.radio("評分", ["未通過", "待加強", "通過"], key=f"chk_s_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
                     st.divider()
 
         with tabs[2]:
@@ -374,11 +372,9 @@ else:
                 with st.expander(f"第 {i+1} 段", expanded=False):
                     st.markdown(f'<div style="font-size: {font_scale}rem; line-height: 1.8; padding: 10px 0;">{p}</div>', unsafe_allow_html=True)
                     
-                    c1, c2 = st.columns([1, 2])
-                    if c1.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
+                    if st.button("🔊 播放全段", key=f"play_p_{reading_id}_{i}"):
                         audio_bytes = get_audio(reading_id, "paragraphs", i + 1, p)
                         if audio_bytes: st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                    c2.radio("段落評分", ["未通過", "待加強", "通過"], key=f"chk_p_{reading_id}_{i}", horizontal=True, label_visibility="collapsed")
 
 # --- 頁尾版權宣告 ---
 st.divider()
