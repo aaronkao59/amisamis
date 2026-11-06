@@ -272,7 +272,7 @@ st.markdown(f"""
 
 selected_reading = st.selectbox(
     "請選擇朗讀稿件：",
-    ["請選擇", "1號朗讀稿", "2號朗讀稿", "3號朗讀稿", "4號朗讀稿"],
+    ["請選擇", "文章一", "文章二", "文章三", "文章四"],
     index=0,
     label_visibility="collapsed"
 )
@@ -382,4 +382,4 @@ else:
 
 # --- 頁尾版權宣告 ---
 st.divider()
-st.caption(f"© 2026 115朗讀練習機 singsi sawmAh ｜ 系統版本：**{APP_VERSION}**")
+st.caption(f"© 2026 文章推論練習機 singsi sawmAh ｜ 系統版本：**{APP_VERSION}**")
