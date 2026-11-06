@@ -254,7 +254,7 @@ def get_audio(read_id, category, index, text):
 
 # --- 🚀 優化：強制時區校準 (台北時間 UTC+8) ---
 taipei_tz = datetime.timezone(datetime.timedelta(hours=8))
-target_date = datetime.date(2026, 9, 19)
+target_date = datetime.date(2026, 12, 05)
 current_date = datetime.datetime.now(taipei_tz).date()
 days_remaining = (target_date - current_date).days
 display_days = max(days_remaining, 0) 
@@ -263,10 +263,10 @@ display_days = max(days_remaining, 0)
 st.markdown(f"""
 <div class="header-container">
     <div class="title-wrapper">
-        <div class="header-title">朗讀訓練機</div>
-        <div class="subtitle-text">115年海岸阿美語 國中組</div>
+        <div class="header-title">短文推論練習</div>
+        <div class="subtitle-text">海岸阿美語</div>
     </div>
-    <div class="countdown-box">距離比賽還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
+    <div class="countdown-box">距離考試還有 &nbsp;&nbsp;{display_days}&nbsp;&nbsp; 天</div>
 </div>
 """, unsafe_allow_html=True)
 
